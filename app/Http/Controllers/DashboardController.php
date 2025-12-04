@@ -109,7 +109,111 @@ class DashboardController extends Controller
             return view('dashboard-mahasiswa', $data);
         }
         
-        // Dashboard untuk Admin/Dosen
+        // Dashboard untuk Admin Universitas
+        if ($user->hasRole('admin_universitas')) {
+            $data = [
+                'total_fakultas' => \App\Models\Fakultas::count(),
+                'total_prodi' => \App\Models\ProgramStudi::count(),
+                'total_mahasiswa' => \App\Models\Mahasiswa::count(),
+                'total_dosen' => \App\Models\Dosen::count(),
+                'total_mata_kuliah' => \App\Models\MataKuliah::count(),
+                'mahasiswa_aktif' => \App\Models\Mahasiswa::where('status', 'Aktif')->count(),
+                'mahasiswa_baru' => \App\Models\Mahasiswa::whereYear('created_at', date('Y'))->count(),
+                'pendaftar_baru' => \App\Models\PendaftaranMahasiswa::where('status', 'Pending')->count(),
+            ];
+            
+            return view('dashboard-admin-universitas', $data);
+        }
+        
+        // Dashboard untuk Admin Fakultas
+        if ($user->hasRole('admin_fakultas')) {
+            $fakultasId = $user->fakultas_id;
+            
+            $data = [
+                'fakultas' => \App\Models\Fakultas::find($fakultasId),
+                'total_prodi' => \App\Models\ProgramStudi::where('fakultas_id', $fakultasId)->count(),
+                'total_mahasiswa' => \App\Models\Mahasiswa::whereHas('programStudi', function($q) use ($fakultasId) {
+                    $q->where('fakultas_id', $fakultasId);
+                })->count(),
+                'total_dosen' => \App\Models\Dosen::where('fakultas_id', $fakultasId)->count(),
+                'mahasiswa_aktif' => \App\Models\Mahasiswa::whereHas('programStudi', function($q) use ($fakultasId) {
+                    $q->where('fakultas_id', $fakultasId);
+                })->where('status', 'Aktif')->count(),
+                'total_mata_kuliah' => \App\Models\MataKuliah::whereHas('programStudi', function($q) use ($fakultasId) {
+                    $q->where('fakultas_id', $fakultasId);
+                })->count(),
+                'mahasiswa_baru' => \App\Models\Mahasiswa::whereHas('programStudi', function($q) use ($fakultasId) {
+                    $q->where('fakultas_id', $fakultasId);
+                })->whereYear('created_at', date('Y'))->count(),
+            ];
+            
+            return view('dashboard-admin-fakultas', $data);
+        }
+        
+        // Dashboard untuk Admin Prodi
+        if ($user->hasRole('admin_prodi')) {
+            $prodiId = $user->program_studi_id;
+            
+            $data = [
+                'prodi' => \App\Models\ProgramStudi::with('fakultas')->find($prodiId),
+                'total_mahasiswa' => \App\Models\Mahasiswa::where('program_studi_id', $prodiId)->count(),
+                'mahasiswa_aktif' => \App\Models\Mahasiswa::where('program_studi_id', $prodiId)
+                    ->where('status', 'Aktif')->count(),
+                'total_dosen' => \App\Models\Dosen::where('program_studi_id', $prodiId)->count(),
+                'total_mata_kuliah' => \App\Models\MataKuliah::where('program_studi_id', $prodiId)->count(),
+                'mahasiswa_baru' => \App\Models\Mahasiswa::where('program_studi_id', $prodiId)
+                    ->whereYear('created_at', date('Y'))->count(),
+                'mahasiswa_per_semester' => \App\Models\Mahasiswa::where('program_studi_id', $prodiId)
+                    ->where('status', 'Aktif')
+                    ->selectRaw('semester, COUNT(*) as jumlah')
+                    ->groupBy('semester')
+                    ->orderBy('semester')
+                    ->get(),
+            ];
+            
+            return view('dashboard-admin-prodi', $data);
+        }
+        
+        // Dashboard untuk Dosen
+        if ($user->hasRole('dosen')) {
+            $dosen = \App\Models\Dosen::where('user_id', $user->id)->first();
+            
+            if (!$dosen) {
+                return redirect()->route('logout')
+                    ->with('error', 'Data dosen tidak ditemukan. Silakan hubungi administrator.');
+            }
+            
+            $semesterAktif = Semester::where('is_active', true)->first();
+            
+            // Jadwal mengajar semester ini
+            $jadwalMengajar = collect([]);
+            if ($semesterAktif) {
+                $parts = explode(' ', $semesterAktif->nama_semester);
+                $tahunAjaran = $parts[0] ?? '';
+                $semesterType = $parts[1] ?? '';
+                
+                $jadwalMengajar = \App\Models\JadwalKuliah::with(['mataKuliah', 'kelas', 'ruang'])
+                    ->where('dosen_id', $dosen->id)
+                    ->where('tahun_ajaran', $tahunAjaran)
+                    ->where('semester', $semesterType)
+                    ->get();
+            }
+            
+            $data = [
+                'dosen' => $dosen,
+                'semester_aktif' => $semesterAktif,
+                'total_jadwal_mengajar' => $jadwalMengajar->count(),
+                'jadwal_mengajar' => $jadwalMengajar,
+                'total_mahasiswa_diampu' => \App\Models\Krs::whereHas('kelas.jadwalKuliah', function($q) use ($dosen) {
+                    $q->where('dosen_id', $dosen->id);
+                })->where('status', 'Disetujui')->distinct('mahasiswa_id')->count('mahasiswa_id'),
+                'total_mata_kuliah' => $jadwalMengajar->unique('mata_kuliah_id')->count(),
+            ];
+            
+            return view('dashboard-dosen', $data);
+        }
+
+        // Dashboard untuk Super Admin (default)
         $data = [
             'total_mahasiswa' => \App\Models\Mahasiswa::count(),
             'total_dosen' => \App\Models\Dosen::count(),
