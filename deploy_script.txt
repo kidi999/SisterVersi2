@@ -1,0 +1,7 @@
+option batch abort 
+option confirm off 
+open ftp://unic:qwert12345@103.241.192.78 
+cd /home/unic/sister 
+lcd "C:\xampp\htdocs\sister" 
+synchronize remote -delete -criteria=size     -filemask="|.git/;.env;.env.backup;node_modules/;vendor/;storage/framework/cache/;storage/framework/sessions/;storage/framework/views/;storage/logs/;.gitignore;.git*;*.log;deploy*.txt;deploy*.bat;setup*.bat;quick*.bat" 
+exit 

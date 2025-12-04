@@ -1,0 +1,204 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Regency;
+use App\Models\Province;
+use App\Models\FileUpload;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+
+class RegencyController extends Controller
+{
+    /**
+     * Display a listing of the regencies.
+     */
+    public function index()
+    {
+        $regencies = Regency::with('province')
+            ->withCount('subRegencies')
+            ->get();
+
+        return view('wilayah.regency.index', compact('regencies'));
+    }
+
+    /**
+     * Show the form for creating a new regency.
+     */
+    public function create()
+    {
+        $provinces = Province::orderBy('name')->get();
+        return view('wilayah.regency.create', compact('provinces'));
+    }
+
+    /**
+     * Store a newly created regency in storage.
+     */
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'province_id' => 'required|exists:provinces,id',
+            'code' => 'required|string|max:10|unique:regencies,code',
+            'name' => 'required|string|max:100',
+        ], [
+            'province_id.required' => 'Provinsi harus dipilih',
+            'province_id.exists' => 'Provinsi tidak valid',
+            'code.required' => 'Kode kabupaten/kota harus diisi',
+            'code.unique' => 'Kode kabupaten/kota sudah digunakan',
+            'code.max' => 'Kode kabupaten/kota maksimal 10 karakter',
+            'name.required' => 'Nama kabupaten/kota harus diisi',
+            'name.max' => 'Nama kabupaten/kota maksimal 100 karakter',
+        ]);
+
+        $validated['created_by'] = Auth::user()->name;
+
+        $regency = Regency::create($validated);
+
+        // Link uploaded files to this regency
+        if ($request->has('file_ids') && !empty($request->file_ids)) {
+            $fileIds = is_array($request->file_ids) ? $request->file_ids : json_decode($request->file_ids, true);
+            if (is_array($fileIds) && count($fileIds) > 0) {
+                FileUpload::whereIn('id', $fileIds)
+                    ->update([
+                        'fileable_type' => Regency::class,
+                        'fileable_id' => $regency->id
+                    ]);
+            }
+        }
+
+        return redirect()->route('regency.index')
+            ->with('success', 'Data kabupaten/kota berhasil ditambahkan.');
+    }
+
+    /**
+     * Display the specified regency.
+     */
+    public function show(string $id)
+    {
+        $regency = Regency::with(['province', 'subRegencies', 'files'])
+            ->findOrFail($id);
+
+        return view('wilayah.regency.show', compact('regency'));
+    }
+
+    /**
+     * Show the form for editing the specified regency.
+     */
+    public function edit(string $id)
+    {
+        $regency = Regency::with(['files'])->findOrFail($id);
+        $provinces = Province::orderBy('name')->get();
+
+        return view('wilayah.regency.edit', compact('regency', 'provinces'));
+    }
+
+    /**
+     * Update the specified regency in storage.
+     */
+    public function update(Request $request, string $id)
+    {
+        $regency = Regency::findOrFail($id);
+
+        $validated = $request->validate([
+            'province_id' => 'required|exists:provinces,id',
+            'code' => 'required|string|max:10|unique:regencies,code,' . $id,
+            'name' => 'required|string|max:100',
+        ], [
+            'province_id.required' => 'Provinsi harus dipilih',
+            'province_id.exists' => 'Provinsi tidak valid',
+            'code.required' => 'Kode kabupaten/kota harus diisi',
+            'code.unique' => 'Kode kabupaten/kota sudah digunakan',
+            'code.max' => 'Kode kabupaten/kota maksimal 10 karakter',
+            'name.required' => 'Nama kabupaten/kota harus diisi',
+            'name.max' => 'Nama kabupaten/kota maksimal 100 karakter',
+        ]);
+
+        $validated['updated_by'] = Auth::user()->name;
+
+        $regency->update($validated);
+
+        // Sync files: update existing ones and link new ones
+        if ($request->has('file_ids')) {
+            $fileIds = json_decode($request->file_ids, true);
+            if (is_array($fileIds)) {
+                // Update all files in the list to be linked to this regency
+                FileUpload::whereIn('id', $fileIds)
+                    ->update([
+                        'fileable_type' => Regency::class,
+                        'fileable_id' => $regency->id
+                    ]);
+
+                // Remove orphaned files (files that were previously linked but not in the new list)
+                FileUpload::where('fileable_type', Regency::class)
+                    ->where('fileable_id', $regency->id)
+                    ->whereNotIn('id', $fileIds)
+                    ->delete();
+            }
+        }
+
+        return redirect()->route('regency.index')
+            ->with('success', 'Data kabupaten/kota berhasil diperbarui.');
+    }
+
+    /**
+     * Remove the specified regency from storage (soft delete).
+     */
+    public function destroy(string $id)
+    {
+        $regency = Regency::findOrFail($id);
+        $regency->deleted_by = Auth::user()->name;
+        $regency->save();
+        $regency->delete();
+
+        return redirect()->route('regency.index')
+            ->with('success', 'Data kabupaten/kota berhasil dihapus.');
+    }
+
+    /**
+     * Display a listing of trashed regencies (super_admin only).
+     */
+    public function trash()
+    {
+        if (!Auth::user()->hasRole(['super_admin'])) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $regencies = Regency::onlyTrashed()
+            ->with(['province'])
+            ->get();
+
+        return view('wilayah.regency.trash', compact('regencies'));
+    }
+
+    /**
+     * Restore the specified regency from trash (super_admin only).
+     */
+    public function restore(string $id)
+    {
+        if (!Auth::user()->hasRole(['super_admin'])) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $regency = Regency::onlyTrashed()->findOrFail($id);
+        $regency->restore();
+
+        return redirect()->route('regency.trash')
+            ->with('success', 'Data kabupaten/kota berhasil dipulihkan.');
+    }
+
+    /**
+     * Permanently delete the specified regency (super_admin only).
+     */
+    public function forceDelete(string $id)
+    {
+        if (!Auth::user()->hasRole(['super_admin'])) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $regency = Regency::onlyTrashed()->findOrFail($id);
+        $regency->forceDelete();
+
+        return redirect()->route('regency.trash')
+            ->with('success', 'Data kabupaten/kota berhasil dihapus permanen.');
+    }
+}
