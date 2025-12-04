@@ -625,6 +625,33 @@
             </div>
             @endif
 
+            <!-- RENCANA KERJA TAHUNAN Section -->
+            @if(Auth::user()->hasRole(['super_admin', 'admin_universitas', 'admin_fakultas', 'admin_prodi']))
+            <div class="menu-section">
+                <div class="menu-header collapsed" data-bs-toggle="collapse" data-bs-target="#menuRKT">
+                    <div class="menu-title">
+                        <i class="bi bi-clipboard-data"></i>
+                        <span>Rencana Kerja Tahunan</span>
+                    </div>
+                    <i class="bi bi-chevron-down menu-icon"></i>
+                </div>
+                <div class="collapse" id="menuRKT">
+                    <ul class="nav flex-column menu-collapse">
+                        <li class="nav-item">
+                            <a class="nav-link {{ request()->routeIs('rencana-kerja-tahunan.*') ? 'active' : '' }}" href="{{ route('rencana-kerja-tahunan.index') }}">
+                                <i class="bi bi-journal-text"></i> Daftar RKT
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {{ request()->routeIs('rencana-kerja-tahunan.create') ? 'active' : '' }}" href="{{ route('rencana-kerja-tahunan.create') }}">
+                                <i class="bi bi-plus-circle"></i> Tambah RKT
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            @endif
+
             @if(Auth::user()->hasRole(['super_admin']))
             <!-- RECYCLE BIN Section -->
             <div class="menu-section">

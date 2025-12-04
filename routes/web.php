@@ -351,4 +351,12 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('api/file-upload/{id}', [FileUploadController::class, 'destroy'])->name('api.file-upload.destroy');
     Route::get('api/file-upload/{id}/download', [FileUploadController::class, 'download'])->name('api.file-upload.download');
     Route::get('api/file-upload/get-files', [FileUploadController::class, 'getFiles'])->name('api.file-upload.getFiles');
+
+    // Routes untuk Rencana Kerja Tahunan - Admin roles only
+    Route::middleware(['role:super_admin,admin_universitas,admin_fakultas,admin_prodi'])->group(function () {
+        Route::resource('rencana-kerja-tahunan', \App\Http\Controllers\RencanaKerjaTahunanController::class);
+        Route::post('rencana-kerja-tahunan/{id}/submit', [\App\Http\Controllers\RencanaKerjaTahunanController::class, 'submit'])->name('rencana-kerja-tahunan.submit');
+        Route::post('rencana-kerja-tahunan/{id}/approve', [\App\Http\Controllers\RencanaKerjaTahunanController::class, 'approve'])->name('rencana-kerja-tahunan.approve');
+        Route::post('rencana-kerja-tahunan/{id}/reject', [\App\Http\Controllers\RencanaKerjaTahunanController::class, 'reject'])->name('rencana-kerja-tahunan.reject');
+    });
 });
