@@ -3,13 +3,17 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use App\Traits\AuditFields;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Traits\AuditableTrait;
 
 class KegiatanRkt extends Model
 {
-    use AuditFields;
+    use HasFactory, SoftDeletes, AuditableTrait;
 
     protected $table = 'kegiatan_rkt';
+
+    public $timestamps = false;
 
     protected $fillable = [
         'program_rkt_id',

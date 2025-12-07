@@ -92,11 +92,11 @@
                                         <td><span class="badge bg-info">{{ $item->level }}</span></td>
                                         <td>
                                             @if($item->level == 'Universitas')
-                                                {{ $item->university->name ?? '-' }}
+                                                {{ $item->university->nama ?? '-' }}
                                             @elseif($item->level == 'Fakultas')
                                                 {{ $item->fakultas->nama_fakultas ?? '-' }}
                                             @else
-                                                {{ $item->programStudi->nama_program_studi ?? '-' }}
+                                                {{ $item->programStudi->nama_prodi ?? '-' }}
                                             @endif
                                         </td>
                                         <td>Rp {{ number_format($item->anggaran, 0, ',', '.') }}</td>

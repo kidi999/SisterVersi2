@@ -118,11 +118,11 @@
                 <div class="card-body">
                     <p>{{ $rkt->deskripsi ?? '-' }}</p>
                     @if($rkt->level == 'Universitas')
-                        <p class="mb-0"><strong>Unit:</strong> {{ $rkt->university->name ?? '-' }}</p>
+                        <p class="mb-0"><strong>Unit:</strong> {{ $rkt->university->nama ?? '-' }}</p>
                     @elseif($rkt->level == 'Fakultas')
                         <p class="mb-0"><strong>Fakultas:</strong> {{ $rkt->fakultas->nama_fakultas ?? '-' }}</p>
                     @else
-                        <p class="mb-0"><strong>Program Studi:</strong> {{ $rkt->programStudi->nama_program_studi ?? '-' }}</p>
+                        <p class="mb-0"><strong>Program Studi:</strong> {{ $rkt->programStudi->nama_prodi ?? '-' }}</p>
                     @endif
                 </div>
             </div>

@@ -13,6 +13,8 @@ class RencanaKerjaTahunan extends Model
 
     protected $table = 'rencana_kerja_tahunan';
 
+    public $timestamps = false;
+
     // Status constants
     const STATUS_DRAFT = 'Draft';
     const STATUS_DIAJUKAN = 'Diajukan';
@@ -95,7 +97,7 @@ class RencanaKerjaTahunan extends Model
             'Diajukan' => 'Diajukan',
             'Disetujui' => 'Disetujui',
             'Ditolak' => 'Ditolak',
-            'Berjalan' => 'Berjalan',
+            'Dalam Proses' => 'Dalam Proses',
             'Selesai' => 'Selesai',
             'Dibatalkan' => 'Dibatalkan',
         ];
@@ -109,7 +111,7 @@ class RencanaKerjaTahunan extends Model
             'Diajukan' => 'warning',
             'Disetujui' => 'success',
             'Ditolak' => 'danger',
-            'Berjalan' => 'primary',
+            'Dalam Proses' => 'primary',
             'Selesai' => 'info',
             'Dibatalkan' => 'dark',
         ];
@@ -140,11 +142,6 @@ class RencanaKerjaTahunan extends Model
     }
 
     // Scopes
-    public function scopeActive($query)
-    {
-        return $query->where('is_active', true);
-    }
-
     public function scopeByLevel($query, $level)
     {
         return $query->where('level', $level);

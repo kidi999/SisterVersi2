@@ -14,21 +14,20 @@ class PencapaianRkt extends Model
     protected $table = 'pencapaian_rkt';
 
     protected $fillable = [
-        'program_kerja_id',
-        'indikator_kinerja_id',
-        'tanggal_laporan',
+        'kegiatan_rkt_id',
         'periode',
-        'deskripsi_pencapaian',
-        'nilai_pencapaian',
-        'persentase_pencapaian',
+        'tanggal_laporan',
+        'capaian',
+        'persentase_capaian',
+        'realisasi_anggaran',
         'kendala',
         'solusi',
-        'tindak_lanjut',
-        'dokumen_pendukung',
+        'rencana_tindak_lanjut',
+        'file_dokumentasi',
         'dilaporkan_oleh',
-        'status_verifikasi',
         'diverifikasi_oleh',
         'tanggal_verifikasi',
+        'status_verifikasi',
         'catatan_verifikasi',
         'inserted_by',
         'inserted_at',
@@ -38,10 +37,12 @@ class PencapaianRkt extends Model
         'deleted_at',
     ];
 
+    public $timestamps = false;
+
     protected $casts = [
         'tanggal_laporan' => 'date',
-        'nilai_pencapaian' => 'decimal:2',
-        'persentase_pencapaian' => 'decimal:2',
+        'persentase_capaian' => 'decimal:2',
+        'realisasi_anggaran' => 'decimal:2',
         'tanggal_verifikasi' => 'datetime',
         'inserted_at' => 'datetime',
         'updated_at' => 'datetime',
@@ -49,22 +50,17 @@ class PencapaianRkt extends Model
     ];
 
     // Relationships
-    public function programKerja()
+    public function kegiatanRkt()
     {
-        return $this->belongsTo(ProgramKerja::class, 'program_kerja_id');
+        return $this->belongsTo(KegiatanRkt::class, 'kegiatan_rkt_id');
     }
 
-    public function indikatorKinerja()
-    {
-        return $this->belongsTo(IndikatorKinerja::class, 'indikator_kinerja_id');
-    }
-
-    public function pelapor()
+    public function dilaporkanOleh()
     {
         return $this->belongsTo(User::class, 'dilaporkan_oleh');
     }
 
-    public function verifikator()
+    public function diverifikasiOleh()
     {
         return $this->belongsTo(User::class, 'diverifikasi_oleh');
     }

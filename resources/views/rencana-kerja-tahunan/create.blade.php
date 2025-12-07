@@ -56,15 +56,15 @@
                                 <label for="level" class="form-label">Level <span class="text-danger">*</span></label>
                                 <select class="form-select @error('level') is-invalid @enderror" id="level" name="level" required>
                                     <option value="">Pilih Level</option>
-                                    @can('manage-university')
+                                    @if(Auth::user()->hasRole(['super_admin', 'admin_universitas']))
                                         <option value="Universitas" {{ old('level') == 'Universitas' ? 'selected' : '' }}>Universitas</option>
-                                    @endcan
-                                    @can('manage-fakultas')
+                                    @endif
+                                    @if(Auth::user()->hasRole(['super_admin', 'admin_universitas', 'admin_fakultas']))
                                         <option value="Fakultas" {{ old('level') == 'Fakultas' ? 'selected' : '' }}>Fakultas</option>
-                                    @endcan
-                                    @can('manage-prodi')
+                                    @endif
+                                    @if(Auth::user()->hasRole(['super_admin', 'admin_universitas', 'admin_fakultas', 'admin_prodi']))
                                         <option value="Prodi" {{ old('level') == 'Prodi' ? 'selected' : '' }}>Prodi</option>
-                                    @endcan
+                                    @endif
                                 </select>
                                 @error('level')
                                     <div class="invalid-feedback">{{ $message }}</div>
@@ -79,7 +79,7 @@
                                     <option value="">Pilih Universitas</option>
                                     @foreach($universities as $univ)
                                         <option value="{{ $univ->id }}" {{ old('university_id') == $univ->id ? 'selected' : '' }}>
-                                            {{ $univ->name }}
+                                            {{ $univ->nama }}
                                         </option>
                                     @endforeach
                                 </select>
@@ -109,7 +109,7 @@
                                     <option value="">Pilih Program Studi</option>
                                     @foreach($prodi as $ps)
                                         <option value="{{ $ps->id }}" {{ old('program_studi_id') == $ps->id ? 'selected' : '' }}>
-                                            {{ $ps->nama_program_studi }}
+                                            {{ $ps->nama_prodi }}
                                         </option>
                                     @endforeach
                                 </select>

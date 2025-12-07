@@ -52,9 +52,9 @@ class RencanaKerjaTahunanController extends Controller
     public function create()
     {
         $user = Auth::user();
-        $universities = University::where('is_active', true)->get();
-        $fakultas = Fakultas::where('is_active', true)->get();
-        $prodi = ProgramStudi::where('is_active', true)->get();
+        $universities = University::orderBy('nama')->get();
+        $fakultas = Fakultas::orderBy('nama_fakultas')->get();
+        $prodi = ProgramStudi::orderBy('nama_prodi')->get();
 
         return view('rencana-kerja-tahunan.create', compact('universities', 'fakultas', 'prodi'));
     }
@@ -106,9 +106,9 @@ class RencanaKerjaTahunanController extends Controller
             return back()->with('error', 'RKT tidak dapat diedit karena sudah dalam proses atau disetujui');
         }
 
-        $universities = University::where('is_active', true)->get();
-        $fakultas = Fakultas::where('is_active', true)->get();
-        $prodi = ProgramStudi::where('is_active', true)->get();
+        $universities = University::orderBy('nama')->get();
+        $fakultas = Fakultas::orderBy('nama_fakultas')->get();
+        $prodi = ProgramStudi::orderBy('nama_prodi')->get();
 
         return view('rencana-kerja-tahunan.edit', compact('rkt', 'universities', 'fakultas', 'prodi'));
     }
