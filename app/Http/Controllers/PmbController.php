@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
 use App\Notifications\PendaftaranEmailVerification;
+use App\Notifications\EmailNotifiable;
 
 class PmbController extends Controller
 {
@@ -108,16 +109,7 @@ class PmbController extends Controller
             ]);
 
             // Send verification email
-            $emailNotifiable = new class($validated['email']) {
-                public $email;
-                public function __construct($email) {
-                    $this->email = $email;
-                }
-                public function routeNotificationForMail() {
-                    return $this->email;
-                }
-            };
-
+            $emailNotifiable = new EmailNotifiable($validated['email']);
             Notification::send($emailNotifiable, new PendaftaranEmailVerification($pendaftaran, $verificationUrl));
 
             DB::commit();
@@ -251,16 +243,7 @@ class PmbController extends Controller
             $verificationUrl = route('pmb.verify-email', ['token' => $newToken]);
 
             // Send verification email
-            $emailNotifiable = new class($pendaftaran->email) {
-                public $email;
-                public function __construct($email) {
-                    $this->email = $email;
-                }
-                public function routeNotificationForMail() {
-                    return $this->email;
-                }
-            };
-
+            $emailNotifiable = new EmailNotifiable($pendaftaran->email);
             Notification::send($emailNotifiable, new PendaftaranEmailVerification($pendaftaran, $verificationUrl));
 
             return redirect()->back()
