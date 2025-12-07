@@ -8,6 +8,9 @@ use App\Models\Province;
 use App\Models\FileUpload;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Str;
+use App\Notifications\PendaftaranEmailVerification;
 
 class PmbController extends Controller
 {
@@ -85,6 +88,9 @@ class PmbController extends Controller
             // Status default untuk pendaftaran publik
             $validated['status'] = 'Pending';
 
+            // Generate email verification token
+            $validated['email_verification_token'] = hash('sha256', Str::random(60) . $validated['email'] . time());
+
             $pendaftaran = PendaftaranMahasiswa::create($validated);
 
             // Attach files
@@ -96,10 +102,28 @@ class PmbController extends Controller
                     ]);
             }
 
+            // Generate verification URL
+            $verificationUrl = route('pmb.verify-email', [
+                'token' => $validated['email_verification_token']
+            ]);
+
+            // Send verification email
+            $emailNotifiable = new class($validated['email']) {
+                public $email;
+                public function __construct($email) {
+                    $this->email = $email;
+                }
+                public function routeNotificationForMail() {
+                    return $this->email;
+                }
+            };
+
+            Notification::send($emailNotifiable, new PendaftaranEmailVerification($pendaftaran, $verificationUrl));
+
             DB::commit();
 
             return redirect()->route('pmb.success', $pendaftaran->id)
-                ->with('success', 'Pendaftaran berhasil! Nomor pendaftaran Anda: ' . $pendaftaran->no_pendaftaran);
+                ->with('success', 'Pendaftaran berhasil! Silakan cek email Anda untuk verifikasi.');
 
         } catch (\Exception $e) {
             DB::rollback();
@@ -144,5 +168,107 @@ class PmbController extends Controller
         }
 
         return view('pmb.status', compact('pendaftaran'));
+    }
+
+    /**
+     * Verifikasi email pendaftaran
+     */
+    public function verifyEmail($token)
+    {
+        $pendaftaran = PendaftaranMahasiswa::where('email_verification_token', $token)->first();
+
+        if (!$pendaftaran) {
+            return view('pmb.verify-result', [
+                'success' => false,
+                'message' => 'Token verifikasi tidak valid atau sudah kadaluarsa.'
+            ]);
+        }
+
+        // Cek apakah sudah diverifikasi
+        if ($pendaftaran->email_verified_at) {
+            return view('pmb.verify-result', [
+                'success' => true,
+                'message' => 'Email Anda sudah diverifikasi sebelumnya.',
+                'pendaftaran' => $pendaftaran
+            ]);
+        }
+
+        // Cek apakah token sudah kadaluarsa (24 jam)
+        $tokenAge = now()->diffInHours($pendaftaran->created_at);
+        if ($tokenAge > 24) {
+            return view('pmb.verify-result', [
+                'success' => false,
+                'message' => 'Token verifikasi sudah kadaluarsa. Silakan hubungi admin untuk bantuan.',
+                'expired' => true
+            ]);
+        }
+
+        // Verifikasi email
+        $pendaftaran->update([
+            'email_verified_at' => now(),
+            'email_verification_token' => null // Hapus token setelah digunakan
+        ]);
+
+        return view('pmb.verify-result', [
+            'success' => true,
+            'message' => 'Email berhasil diverifikasi! Pendaftaran Anda akan segera diproses.',
+            'pendaftaran' => $pendaftaran
+        ]);
+    }
+
+    /**
+     * Kirim ulang email verifikasi
+     */
+    public function resendVerification(Request $request)
+    {
+        $request->validate([
+            'no_pendaftaran' => 'required|string',
+            'email' => 'required|email'
+        ]);
+
+        $pendaftaran = PendaftaranMahasiswa::where('no_pendaftaran', $request->no_pendaftaran)
+            ->where('email', $request->email)
+            ->first();
+
+        if (!$pendaftaran) {
+            return redirect()->back()
+                ->with('error', 'Data pendaftaran tidak ditemukan.');
+        }
+
+        if ($pendaftaran->email_verified_at) {
+            return redirect()->back()
+                ->with('info', 'Email Anda sudah diverifikasi sebelumnya.');
+        }
+
+        try {
+            // Generate token baru
+            $newToken = hash('sha256', Str::random(60) . $pendaftaran->email . time());
+            $pendaftaran->update([
+                'email_verification_token' => $newToken
+            ]);
+
+            // Generate verification URL
+            $verificationUrl = route('pmb.verify-email', ['token' => $newToken]);
+
+            // Send verification email
+            $emailNotifiable = new class($pendaftaran->email) {
+                public $email;
+                public function __construct($email) {
+                    $this->email = $email;
+                }
+                public function routeNotificationForMail() {
+                    return $this->email;
+                }
+            };
+
+            Notification::send($emailNotifiable, new PendaftaranEmailVerification($pendaftaran, $verificationUrl));
+
+            return redirect()->back()
+                ->with('success', 'Email verifikasi berhasil dikirim ulang. Silakan cek inbox Anda.');
+
+        } catch (\Exception $e) {
+            return redirect()->back()
+                ->with('error', 'Gagal mengirim email: ' . $e->getMessage());
+        }
     }
 }

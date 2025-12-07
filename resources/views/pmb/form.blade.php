@@ -226,7 +226,10 @@
                         @error('email')
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
-                        <small class="text-muted">Email akan digunakan untuk cek status pendaftaran</small>
+                        <small class="text-muted">
+                            <i class="bi bi-exclamation-circle text-warning"></i> 
+                            <strong>Penting:</strong> Masukkan email yang valid dan aktif. Link verifikasi akan dikirim ke email ini.
+                        </small>
                     </div>
                 </div>
             </div>

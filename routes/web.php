@@ -46,6 +46,8 @@ Route::prefix('pmb')->name('pmb.')->group(function () {
     Route::post('/daftar', [PmbController::class, 'store'])->name('store');
     Route::get('/success/{id}', [PmbController::class, 'success'])->name('success');
     Route::match(['get', 'post'], '/cek-status', [PmbController::class, 'checkStatus'])->name('check-status');
+    Route::get('/verify-email/{token}', [PmbController::class, 'verifyEmail'])->name('verify-email');
+    Route::post('/resend-verification', [PmbController::class, 'resendVerification'])->name('resend-verification');
 });
 
 // Authentication Routes

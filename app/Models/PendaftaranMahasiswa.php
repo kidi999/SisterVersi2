@@ -33,6 +33,8 @@ class PendaftaranMahasiswa extends Model
         'kode_pos',
         'telepon',
         'email',
+        'email_verification_token',
+        'email_verified_at',
         'asal_sekolah',
         'jurusan_sekolah',
         'tahun_lulus',
@@ -57,6 +59,7 @@ class PendaftaranMahasiswa extends Model
         'tanggal_lahir' => 'date',
         'tanggal_daftar' => 'datetime',
         'tanggal_verifikasi' => 'datetime',
+        'email_verified_at' => 'datetime',
     ];
 
     /**

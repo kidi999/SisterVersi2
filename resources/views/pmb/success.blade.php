@@ -51,13 +51,24 @@
                     </div>
 
                     <div class="alert alert-warning mb-4">
-                        <h6 class="alert-heading"><i class="bi bi-exclamation-triangle"></i> Informasi Penting:</h6>
+                        <h6 class="alert-heading"><i class="bi bi-envelope-check"></i> Verifikasi Email Diperlukan!</h6>
                         <ul class="text-start mb-0">
-                            <li>Data Anda akan diverifikasi oleh tim kami dalam 1-3 hari kerja</li>
-                            <li>Pantau status pendaftaran Anda secara berkala</li>
-                            <li>Periksa email Anda untuk notifikasi dari kami</li>
-                            <li>Simpan nomor pendaftaran Anda untuk cek status</li>
+                            <li><strong>Cek email Anda</strong> untuk link verifikasi yang kami kirim ke <strong>{{ $pendaftaran->email }}</strong></li>
+                            <li><strong>Klik link verifikasi</strong> dalam email tersebut untuk mengaktifkan pendaftaran Anda</li>
+                            <li>Link verifikasi berlaku <strong>24 jam</strong> setelah pendaftaran</li>
+                            <li>Jika tidak menemukan email, cek folder spam/junk</li>
+                            <li>Setelah email terverifikasi, data Anda akan diproses dalam 1-3 hari kerja</li>
                         </ul>
+                    </div>
+
+                    <div class="alert alert-info mb-4">
+                        <i class="bi bi-info-circle"></i> Belum menerima email? 
+                        <form action="{{ route('pmb.resend-verification') }}" method="POST" class="d-inline">
+                            @csrf
+                            <input type="hidden" name="no_pendaftaran" value="{{ $pendaftaran->no_pendaftaran }}">
+                            <input type="hidden" name="email" value="{{ $pendaftaran->email }}">
+                            <button type="submit" class="btn btn-link p-0 align-baseline">Kirim Ulang Email Verifikasi</button>
+                        </form>
                     </div>
 
                     <div class="d-grid gap-2">

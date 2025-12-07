@@ -64,7 +64,30 @@
                         </tr>
                         <tr>
                             <th>Email</th>
-                            <td>{{ $pendaftaran->email }}</td>
+                            <td>
+                                {{ $pendaftaran->email }}
+                                @if($pendaftaran->email_verified_at)
+                                    <span class="badge bg-success ms-2">
+                                        <i class="bi bi-check-circle"></i> Terverifikasi
+                                    </span>
+                                    <br><small class="text-muted">Diverifikasi: {{ $pendaftaran->email_verified_at->format('d/m/Y H:i') }}</small>
+                                @else
+                                    <span class="badge bg-warning ms-2">
+                                        <i class="bi bi-exclamation-circle"></i> Belum Diverifikasi
+                                    </span>
+                                    <br>
+                                    <small class="text-danger">Silakan verifikasi email Anda dengan mengklik link yang dikirim ke email</small>
+                                    <br>
+                                    <form action="{{ route('pmb.resend-verification') }}" method="POST" class="d-inline mt-2">
+                                        @csrf
+                                        <input type="hidden" name="no_pendaftaran" value="{{ $pendaftaran->no_pendaftaran }}">
+                                        <input type="hidden" name="email" value="{{ $pendaftaran->email }}">
+                                        <button type="submit" class="btn btn-sm btn-warning">
+                                            <i class="bi bi-envelope"></i> Kirim Ulang Email Verifikasi
+                                        </button>
+                                    </form>
+                                @endif
+                            </td>
                         </tr>
                         <tr>
                             <th>Jalur Pendaftaran</th>
