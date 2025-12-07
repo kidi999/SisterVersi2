@@ -50,6 +50,13 @@ Route::prefix('pmb')->name('pmb.')->group(function () {
     Route::post('/resend-verification', [PmbController::class, 'resendVerification'])->name('resend-verification');
 });
 
+// Public API Routes for Region Data (for PMB form)
+Route::prefix('api')->name('api.')->group(function () {
+    Route::get('regencies/{province}', [RegionController::class, 'getRegencies'])->name('regencies');
+    Route::get('sub-regencies/{regency}', [RegionController::class, 'getSubRegencies'])->name('subregencies');
+    Route::get('villages/{subRegency}', [RegionController::class, 'getVillages'])->name('villages');
+});
+
 // Authentication Routes
 Route::get('login', [LoginController::class, 'showLoginForm'])->name('login');
 Route::post('login', [LoginController::class, 'login']);
@@ -347,10 +354,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('users/program-studi/{fakultasId}', [UserController::class, 'getProgramStudi'])->name('users.program-studi');
     });
 
-    // Routes untuk Region (AJAX) - Available to all authenticated users
-    Route::get('api/regencies/{province}', [RegionController::class, 'getRegencies'])->name('api.regencies');
-    Route::get('api/sub-regencies/{regency}', [RegionController::class, 'getSubRegencies'])->name('api.subregencies');
-    Route::get('api/villages/{subRegency}', [RegionController::class, 'getVillages'])->name('api.villages');
+    // Routes untuk Region (AJAX) - Removed from here, moved to public routes above for PMB form access
 
     // Routes untuk File Upload (AJAX) - Available to all authenticated users
     Route::post('api/file-upload', [FileUploadController::class, 'upload'])->name('api.file-upload.upload');
