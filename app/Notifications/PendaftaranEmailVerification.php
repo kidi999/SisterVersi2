@@ -3,12 +3,11 @@
 namespace App\Notifications;
 
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use App\Models\PendaftaranMahasiswa;
 
-class PendaftaranEmailVerification extends Notification implements ShouldQueue
+class PendaftaranEmailVerification extends Notification
 {
     use Queueable;
 
