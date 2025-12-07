@@ -53,6 +53,10 @@ Route::get('login', [LoginController::class, 'showLoginForm'])->name('login');
 Route::post('login', [LoginController::class, 'login']);
 Route::post('logout', [LoginController::class, 'logout'])->name('logout');
 
+// Google OAuth Routes
+Route::get('auth/google', [App\Http\Controllers\Auth\GoogleController::class, 'redirectToGoogle'])->name('auth.google');
+Route::get('auth/google/callback', [App\Http\Controllers\Auth\GoogleController::class, 'handleGoogleCallback']);
+
 // Protected Routes - Requires Authentication
 Route::middleware(['auth'])->group(function () {
     // Dashboard
@@ -358,5 +362,13 @@ Route::middleware(['auth'])->group(function () {
         Route::post('rencana-kerja-tahunan/{id}/submit', [\App\Http\Controllers\RencanaKerjaTahunanController::class, 'submit'])->name('rencana-kerja-tahunan.submit');
         Route::post('rencana-kerja-tahunan/{id}/approve', [\App\Http\Controllers\RencanaKerjaTahunanController::class, 'approve'])->name('rencana-kerja-tahunan.approve');
         Route::post('rencana-kerja-tahunan/{id}/reject', [\App\Http\Controllers\RencanaKerjaTahunanController::class, 'reject'])->name('rencana-kerja-tahunan.reject');
+    });
+
+    // Routes untuk Profile - Available to all authenticated users
+    Route::prefix('profile')->name('profile.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\ProfileController::class, 'edit'])->name('edit');
+        Route::put('/', [\App\Http\Controllers\ProfileController::class, 'update'])->name('update');
+        Route::get('/password', [\App\Http\Controllers\ProfileController::class, 'editPassword'])->name('edit-password');
+        Route::put('/password', [\App\Http\Controllers\ProfileController::class, 'updatePassword'])->name('update-password');
     });
 });

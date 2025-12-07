@@ -14,10 +14,57 @@
     <style>
         body {
             overflow-x: hidden;
+            padding-top: 56px;
         }
+        
+        /* Top Navbar Styles */
+        .navbar.fixed-top {
+            height: 56px;
+        }
+        
+        .user-avatar-small {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+        
+        .user-avatar-dropdown {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+        
+        .dropdown-header {
+            padding: 12px 16px;
+        }
+        
+        .dropdown-item {
+            padding: 10px 20px;
+            transition: all 0.2s;
+        }
+        
+        .dropdown-item:hover {
+            background-color: #f8f9fa;
+            padding-left: 25px;
+        }
+        
         .sidebar {
-            min-height: 100vh;
-            max-height: 100vh;
+            min-height: calc(100vh - 56px);
+            max-height: calc(100vh - 56px);
             overflow-y: auto;
             background: linear-gradient(180deg, #2c3e50 0%, #34495e 100%);
             position: fixed;
@@ -160,12 +207,17 @@
         .main-content {
             padding: 20px;
             margin-left: 250px;
+            margin-top: 56px;
             transition: margin-left 0.3s ease;
-            min-height: 100vh;
+            min-height: calc(100vh - 56px);
             background-color: #f8f9fa;
         }
         .main-content.expanded {
             margin-left: 0;
+        }
+        
+        .navbar.expanded {
+            margin-left: 0 !important;
         }
         .navbar-brand {
             font-weight: bold;
@@ -271,13 +323,81 @@
     @yield('styles')
 </head>
 <body>
-    <!-- Sidebar Toggle Button -->
-    <button class="sidebar-toggle" id="sidebarToggle">
-        <i class="bi bi-list"></i>
-    </button>
+    <!-- Top Navbar -->
+    <nav class="navbar navbar-expand navbar-dark bg-primary fixed-top shadow-sm" style="margin-left: 250px; transition: margin-left 0.3s ease; z-index: 999;">
+        <div class="container-fluid">
+            <button class="btn btn-link text-white" id="sidebarToggleTop">
+                <i class="bi bi-list fs-4"></i>
+            </button>
+            
+            <div class="d-flex align-items-center ms-auto">
+                <!-- Notifications -->
+                <div class="dropdown me-3">
+                    <button class="btn btn-link text-white position-relative" type="button" data-bs-toggle="dropdown">
+                        <i class="bi bi-bell fs-5"></i>
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.6rem;">
+                            3
+                        </span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end" style="min-width: 300px;">
+                        <li><h6 class="dropdown-header">Notifikasi</h6></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item small" href="#">Tidak ada notifikasi baru</a></li>
+                    </ul>
+                </div>
+
+                <!-- User Profile Dropdown -->
+                <div class="dropdown">
+                    <button class="btn btn-link text-white text-decoration-none d-flex align-items-center" type="button" data-bs-toggle="dropdown">
+                        <div class="user-avatar-small me-2">
+                            {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
+                        </div>
+                        <div class="text-start me-2 d-none d-md-block">
+                            <div class="fw-semibold small">{{ Auth::user()->name }}</div>
+                            <div class="text-white-50" style="font-size: 0.7rem;">{{ Auth::user()->getRoleNames()->first() }}</div>
+                        </div>
+                        <i class="bi bi-chevron-down"></i>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li>
+                            <div class="dropdown-header d-flex align-items-center">
+                                <div class="user-avatar-dropdown me-2">
+                                    {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
+                                </div>
+                                <div>
+                                    <div class="fw-semibold">{{ Auth::user()->name }}</div>
+                                    <div class="small text-muted">{{ Auth::user()->email }}</div>
+                                </div>
+                            </div>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <a class="dropdown-item" href="{{ route('profile.edit') }}">
+                                <i class="bi bi-person me-2"></i>Profil Saya
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" href="{{ route('profile.edit-password') }}">
+                                <i class="bi bi-key me-2"></i>Ganti Password
+                            </a>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <form method="POST" action="{{ route('logout') }}">
+                                @csrf
+                                <button type="submit" class="dropdown-item text-danger">
+                                    <i class="bi bi-box-arrow-right me-2"></i>Logout
+                                </button>
+                            </form>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </nav>
 
     <!-- Sidebar -->
-    <nav class="sidebar" id="sidebar">
+    <nav class="sidebar" id="sidebar" style="top: 56px;">
         <!-- Sidebar Header -->
         <div class="sidebar-header">
             <div class="text-center">
@@ -862,30 +982,8 @@
         </div>
 
         <!-- Sidebar Footer -->
-        <div class="sidebar-footer">
-            <!-- User Profile -->
-            <div class="user-profile">
-                <div class="user-avatar">
-                    {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
-                </div>
-                <div class="user-info">
-                    <p class="user-name" title="{{ Auth::user()->name }}">{{ Auth::user()->name }}</p>
-                    <p class="user-role">{{ Auth::user()->role->display_name ?? 'User' }}</p>
-                </div>
-            </div>
-
-            <!-- Action Buttons -->
-            <div class="d-grid gap-2">
-                <a href="#" class="btn btn-outline-light btn-sm">
-                    <i class="bi bi-person-circle"></i> Profile
-                </a>
-                <form action="{{ route('logout') }}" method="POST" class="m-0">
-                    @csrf
-                    <button type="submit" class="btn btn-danger btn-sm w-100">
-                        <i class="bi bi-box-arrow-right"></i> Logout
-                    </button>
-                </form>
-            </div>
+        <div class="sidebar-footer text-center">
+            <small class="text-white-50">© 2025 SISTER v1.0</small>
         </div>
     </nav>
 
@@ -956,18 +1054,22 @@
     <script>
         $(document).ready(function() {
             // Sidebar Toggle
-            $('#sidebarToggle').click(function() {
+            function toggleSidebar() {
                 $('#sidebar').toggleClass('hidden');
                 $('#mainContent').toggleClass('expanded');
-                $(this).toggleClass('moved');
+                $('.navbar.fixed-top').toggleClass('expanded');
+                $('#sidebarToggle').toggleClass('moved');
                 
-                // Change icon
-                const icon = $(this).find('i');
-                if ($('#sidebar').hasClass('hidden')) {
-                    icon.removeClass('bi-list').addClass('bi-layout-sidebar-inset');
-                } else {
-                    icon.removeClass('bi-layout-sidebar-inset').addClass('bi-list');
-                }
+                // Change icon for both buttons
+                const isHidden = $('#sidebar').hasClass('hidden');
+                const iconClass = isHidden ? 'bi-layout-sidebar-inset' : 'bi-list';
+                const removeIconClass = isHidden ? 'bi-list' : 'bi-layout-sidebar-inset';
+                
+                $('#sidebarToggle i, #sidebarToggleTop i').removeClass(removeIconClass).addClass(iconClass);
+            }
+            
+            $('#sidebarToggle, #sidebarToggleTop').click(function() {
+                toggleSidebar();
             });
 
             // Update clock every second

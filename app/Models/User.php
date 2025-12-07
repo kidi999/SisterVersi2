@@ -25,6 +25,9 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'google_id',
+        'avatar',
+        'email_verified_at',
         'role_id',
         'fakultas_id',
         'program_studi_id',
@@ -149,5 +152,14 @@ class User extends Authenticatable
             Role::ADMIN_FAKULTAS,
             Role::ADMIN_PRODI
         ]);
+    }
+
+    /**
+     * Get user role names (compatibility method for views)
+     * Returns a collection with the role display name
+     */
+    public function getRoleNames()
+    {
+        return collect([$this->role ? $this->role->display_name : 'User']);
     }
 }
