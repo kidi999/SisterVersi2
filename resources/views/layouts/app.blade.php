@@ -5,6 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'SISTER - Sistem Informasi Akademik')</title>
+    <!-- Open Graph Meta Tags untuk WhatsApp/Facebook Preview -->
+    <meta property="og:title" content="SISTER - Sistem Informasi Akademik Terintegrasi">
+    <meta property="og:description" content="Sistem manajemen akademik terpadu untuk universitas.">
+    <meta property="og:image" content="https://unicimi.ac.id/wp-content/uploads/2022/09/cropped-logo-unicimi.png">
+    <meta property="og:url" content="https://sister.unic.ac.id">
+    <meta name="twitter:card" content="summary_large_image">
     
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
