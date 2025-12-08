@@ -21,8 +21,8 @@ return new class extends Migration
             $table->integer('urutan')->default(0);
             
             // Audit fields
-            $table->unsignedBigInteger('inserted_by')->nullable();
-            $table->timestamp('inserted_at')->nullable();
+            $table->unsignedBigInteger('created_by')->nullable();
+            $table->timestamp('created_at')->nullable();
             $table->unsignedBigInteger('updated_by')->nullable();
             $table->timestamp('updated_at')->nullable();
             $table->unsignedBigInteger('deleted_by')->nullable();

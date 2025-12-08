@@ -22,8 +22,8 @@ class Nilai extends Model
         'nilai_akhir',
         'nilai_huruf',
         'bobot',
-        'inserted_by',
-        'inserted_at',
+        'created_by',
+        'created_at',
         'updated_by',
         'deleted_by'
     ];
@@ -36,7 +36,7 @@ class Nilai extends Model
         'bobot' => 'decimal:2'
     ];
 
-    protected $dates = ['deleted_at', 'inserted_at'];
+    protected $dates = ['deleted_at', 'created_at'];
 
     /**
      * Relasi dengan KRS

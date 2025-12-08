@@ -16,8 +16,8 @@ return new class extends Migration
             $table->id();
             $table->string('code', 10)->unique();
             $table->string('name', 100);
-            $table->string('inserted_by', 100)->nullable();
-            $table->timestamp('inserted_at')->nullable();
+            $table->string('created_by', 100)->nullable();
+            $table->timestamp('created_at')->nullable();
             $table->timestamps();
             $table->string('updated_by', 100)->nullable();
             $table->string('deleted_by', 100)->nullable();
@@ -31,8 +31,8 @@ return new class extends Migration
             $table->string('code', 10)->unique();
             $table->string('name', 100);
             $table->enum('type', ['Kabupaten', 'Kota']);
-            $table->string('inserted_by', 100)->nullable();
-            $table->timestamp('inserted_at')->nullable();
+            $table->string('created_by', 100)->nullable();
+            $table->timestamp('created_at')->nullable();
             $table->timestamps();
             $table->string('updated_by', 100)->nullable();
             $table->string('deleted_by', 100)->nullable();
@@ -45,8 +45,8 @@ return new class extends Migration
             $table->foreignId('regency_id')->constrained('regencies')->onDelete('cascade');
             $table->string('code', 10)->unique();
             $table->string('name', 100);
-            $table->string('inserted_by', 100)->nullable();
-            $table->timestamp('inserted_at')->nullable();
+            $table->string('created_by', 100)->nullable();
+            $table->timestamp('created_at')->nullable();
             $table->timestamps();
             $table->string('updated_by', 100)->nullable();
             $table->string('deleted_by', 100)->nullable();
@@ -60,8 +60,8 @@ return new class extends Migration
             $table->string('code', 10)->unique();
             $table->string('name', 100);
             $table->string('postal_code', 10)->nullable();
-            $table->string('inserted_by', 100)->nullable();
-            $table->timestamp('inserted_at')->nullable();
+            $table->string('created_by', 100)->nullable();
+            $table->timestamp('created_at')->nullable();
             $table->timestamps();
             $table->string('updated_by', 100)->nullable();
             $table->string('deleted_by', 100)->nullable();

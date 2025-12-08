@@ -32,8 +32,8 @@ class Dosen extends Model
         'pendidikan_terakhir',
         'jabatan_akademik',
         'status',
-        'inserted_by',
-        'inserted_at',
+        'created_by',
+        'created_at',
         'updated_by',
         'deleted_by'
     ];
@@ -42,7 +42,7 @@ class Dosen extends Model
         'tanggal_lahir' => 'date'
     ];
 
-    protected $dates = ['deleted_at', 'inserted_at'];
+    protected $dates = ['deleted_at', 'created_at'];
 
     /**
      * Relasi dengan Village

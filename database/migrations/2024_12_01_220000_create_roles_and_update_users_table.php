@@ -17,8 +17,8 @@ return new class extends Migration
             $table->string('name', 50)->unique();
             $table->string('display_name', 100);
             $table->text('description')->nullable();
-            $table->string('inserted_by', 100)->nullable();
-            $table->timestamp('inserted_at')->nullable();
+            $table->string('created_by', 100)->nullable();
+            $table->timestamp('created_at')->nullable();
             $table->timestamps();
             $table->string('updated_by', 100)->nullable();
             $table->string('deleted_by', 100)->nullable();
@@ -33,8 +33,8 @@ return new class extends Migration
             $table->foreignId('dosen_id')->nullable()->after('program_studi_id')->constrained('dosen')->onDelete('set null');
             $table->foreignId('mahasiswa_id')->nullable()->after('dosen_id')->constrained('mahasiswa')->onDelete('set null');
             $table->boolean('is_active')->default(true)->after('password');
-            $table->string('inserted_by', 100)->nullable()->after('remember_token');
-            $table->timestamp('inserted_at')->nullable()->after('inserted_by');
+            $table->string('created_by', 100)->nullable()->after('remember_token');
+            $table->timestamp('created_at')->nullable()->after('created_by');
             $table->string('updated_by', 100)->nullable();
             $table->string('deleted_by', 100)->nullable();
             $table->softDeletes();
@@ -55,7 +55,7 @@ return new class extends Migration
             $table->dropColumn([
                 'role_id', 'fakultas_id', 'program_studi_id', 
                 'dosen_id', 'mahasiswa_id', 'is_active',
-                'inserted_by', 'inserted_at', 'updated_by', 'deleted_by'
+                'created_by', 'created_at', 'updated_by', 'deleted_by'
             ]);
             $table->dropSoftDeletes();
         });

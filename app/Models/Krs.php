@@ -25,8 +25,8 @@ class Krs extends Model
         'status',
         'tanggal_pengajuan',
         'tanggal_persetujuan',
-        'inserted_by',
-        'inserted_at',
+        'created_by',
+        'created_at',
         'updated_by',
         'deleted_by'
     ];
@@ -36,7 +36,7 @@ class Krs extends Model
         'tanggal_persetujuan' => 'datetime'
     ];
 
-    protected $dates = ['deleted_at', 'inserted_at'];
+    protected $dates = ['deleted_at', 'created_at'];
 
     /**
      * Relasi dengan Mahasiswa

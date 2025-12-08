@@ -27,8 +27,8 @@ return new class extends Migration
             $table->string('file_sk_path')->nullable(); // Path file SK
             
             // Audit fields
-            $table->string('inserted_by', 100)->nullable();
-            $table->timestamp('inserted_at')->nullable();
+            $table->string('created_by', 100)->nullable();
+            $table->timestamp('created_at')->nullable();
             $table->string('updated_by', 100)->nullable();
             $table->timestamp('updated_at')->nullable();
             $table->string('deleted_by', 100)->nullable();

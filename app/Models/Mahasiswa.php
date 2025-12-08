@@ -32,8 +32,8 @@ class Mahasiswa extends Model
         'status',
         'nama_wali',
         'telepon_wali',
-        'inserted_by',
-        'inserted_at',
+        'created_by',
+        'created_at',
         'updated_by',
         'deleted_by'
     ];
@@ -43,7 +43,7 @@ class Mahasiswa extends Model
         'ipk' => 'decimal:2'
     ];
 
-    protected $dates = ['deleted_at', 'inserted_at'];
+    protected $dates = ['deleted_at', 'created_at'];
 
     /**
      * Relasi dengan Village

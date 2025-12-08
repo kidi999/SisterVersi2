@@ -26,8 +26,8 @@ return new class extends Migration
 
         foreach ($tables as $table) {
             Schema::table($table, function (Blueprint $table) {
-                $table->string('inserted_by', 100)->nullable()->after('id');
-                $table->timestamp('inserted_at')->nullable()->after('inserted_by');
+                $table->string('created_by', 100)->nullable()->after('id');
+                $table->timestamp('created_at')->nullable()->after('created_by');
                 $table->string('updated_by', 100)->nullable()->after('updated_at');
                 $table->string('deleted_by', 100)->nullable()->after('updated_by');
                 $table->softDeletes();
@@ -54,7 +54,7 @@ return new class extends Migration
 
         foreach ($tables as $table) {
             Schema::table($table, function (Blueprint $table) {
-                $table->dropColumn(['inserted_by', 'inserted_at', 'updated_by', 'deleted_by']);
+                $table->dropColumn(['created_by', 'created_at', 'updated_by', 'deleted_by']);
                 $table->dropSoftDeletes();
             });
         }

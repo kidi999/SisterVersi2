@@ -24,8 +24,8 @@ return new class extends Migration
             $table->integer('order')->default(0); // For ordering files
             
             // Audit fields
-            $table->string('inserted_by')->nullable();
-            $table->timestamp('inserted_at')->nullable();
+            $table->string('created_by')->nullable();
+            $table->timestamp('created_at')->nullable();
             $table->string('updated_by')->nullable();
             $table->timestamp('updated_at')->nullable();
             $table->string('deleted_by')->nullable();

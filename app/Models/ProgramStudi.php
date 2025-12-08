@@ -27,7 +27,7 @@ class ProgramStudi extends Model
         'deleted_by'
     ];
 
-    protected $dates = ['deleted_at', 'inserted_at'];
+    protected $dates = ['deleted_at', 'created_at'];
 
     /**
      * Relasi dengan Fakultas
