@@ -177,13 +177,13 @@
                     <table class="table table-sm">
                         <tr>
                             <td><strong>Dibuat oleh</strong></td>
-                            <td>{{ $kr->inserted_by ?? '-' }}</td>
+                            <td>{{ $kr->created_by ?? '-' }}</td>
                         </tr>
                         <tr>
                             <td><strong>Dibuat pada</strong></td>
                             <td>
-                                @if($kr->inserted_at)
-                                {{ \Carbon\Carbon::parse($kr->inserted_at)->format('d/m/Y H:i') }}
+                                @if($kr->created_at)
+                                {{ \Carbon\Carbon::parse($kr->created_at)->format('d/m/Y H:i') }}
                                 @else
                                 -
                                 @endif

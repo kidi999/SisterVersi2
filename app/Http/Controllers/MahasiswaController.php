@@ -125,8 +125,8 @@ class MahasiswaController extends Controller
                 'program_studi_id' => $mahasiswa->program_studi_id,
                 'mahasiswa_id' => $mahasiswa->id,
                 'is_active' => true,
-                'inserted_by' => auth()->check() ? auth()->user()->name : 'System',
-                'inserted_at' => now(),
+                'created_by' => auth()->check() ? auth()->user()->name : 'System',
+                'created_at' => now(),
             ]);
 
             // Return success with password info

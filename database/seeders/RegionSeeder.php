@@ -16,8 +16,8 @@ class RegionSeeder extends Seeder
         $jakarta = Province::create([
             'code' => '31',
             'name' => 'DKI Jakarta',
-            'inserted_by' => 'System',
-            'inserted_at' => now()
+            'created_by' => 'System',
+            'created_at' => now()
         ]);
 
         $jaksel = Regency::create([

@@ -142,8 +142,8 @@ class FileUploadController extends Controller
                     'is_image' => $file->is_image,
                     'description' => $file->description,
                     'url' => asset('storage/' . $file->file_path),
-                    'uploaded_by' => $file->inserted_by,
-                    'uploaded_at' => $file->inserted_at ? $file->inserted_at->format('d/m/Y H:i') : '-',
+                    'uploaded_by' => $file->created_by,
+                    'uploaded_at' => $file->created_at ? $file->created_at->format('d/m/Y H:i') : '-',
                 ];
             });
 

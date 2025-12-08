@@ -16,8 +16,8 @@ class RoleAndUserSeeder extends Seeder
             'name' => Role::SUPER_ADMIN,
             'display_name' => 'Super Admin',
             'description' => 'Akses penuh ke seluruh sistem',
-            'inserted_by' => 'System',
-            'inserted_at' => now()
+            'created_by' => 'System',
+            'created_at' => now()
         ]);
 
         $adminUniv = Role::create([

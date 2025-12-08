@@ -146,8 +146,8 @@ class NilaiController extends Controller
             // Create nilai and auto-calculate
             $nilai = new Nilai($validated);
             $nilai->hitungNilaiAkhir();
-            $nilai->inserted_by = Auth::user()->name;
-            $nilai->inserted_at = now();
+            $nilai->created_by = Auth::user()->name;
+            $nilai->created_at = now();
             $nilai->save();
 
             return redirect()->route('nilai.index')
@@ -338,8 +338,8 @@ class NilaiController extends Controller
                     // Create new
                     $nilai = new Nilai($nilaiData);
                     $nilai->hitungNilaiAkhir();
-                    $nilai->inserted_by = Auth::user()->name;
-                    $nilai->inserted_at = now();
+                    $nilai->created_by = Auth::user()->name;
+                    $nilai->created_at = now();
                     $nilai->save();
                 }
             }

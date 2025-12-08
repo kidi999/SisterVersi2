@@ -88,8 +88,8 @@ class KelasController extends Controller
                 'semester' => $validated['semester'],
                 'kapasitas' => $validated['kapasitas'],
                 'terisi' => 0,
-                'inserted_by' => Auth::user()->name,
-                'inserted_at' => now(),
+                'created_by' => Auth::user()->name,
+                'created_at' => now(),
             ]);
 
             DB::commit();

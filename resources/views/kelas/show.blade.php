@@ -100,11 +100,11 @@
                     <table class="table table-borderless table-sm">
                         <tr>
                             <th width="150">Dibuat oleh:</th>
-                            <td>{{ $kela->inserted_by ?? '-' }}</td>
+                            <td>{{ $kela->created_by ?? '-' }}</td>
                         </tr>
                         <tr>
                             <th>Tanggal dibuat:</th>
-                            <td>{{ $kela->inserted_at ? $kela->inserted_at->format('d/m/Y H:i') : ($kela->created_at ? $kela->created_at->format('d/m/Y H:i') : '-') }}</td>
+                            <td>{{ $kela->created_at ? $kela->created_at->format('d/m/Y H:i') : '-' }}</td>
                         </tr>
                         <tr>
                             <th>Diupdate oleh:</th>

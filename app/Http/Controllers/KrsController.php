@@ -177,8 +177,8 @@ class KrsController extends Controller
                     'semester' => $tahunAkademik->semester,
                     'status' => 'Menunggu',
                     'tanggal_pengajuan' => now(),
-                    'inserted_by' => $user->name,
-                    'inserted_at' => now(),
+                    'created_by' => $user->name,
+                    'created_at' => now(),
                 ]);
 
                 // Update terisi di kelas
