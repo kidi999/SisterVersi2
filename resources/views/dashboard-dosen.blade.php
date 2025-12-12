@@ -153,16 +153,8 @@
                                 <i class="bi bi-calendar3"></i> Jadwal Kuliah
                             </a>
                         </div>
-                        <div class="col-md-3 mb-3">
-                            <a href="{{ route('pertemuan-kuliah.index') }}" class="btn btn-outline-success btn-block">
-                                <i class="bi bi-calendar-check"></i> Pertemuan Kuliah
-                            </a>
-                        </div>
-                        <div class="col-md-3 mb-3">
-                            <a href="{{ route('absensi-mahasiswa.index') }}" class="btn btn-outline-info btn-block">
-                                <i class="bi bi-clipboard-check"></i> Absensi Mahasiswa
-                            </a>
-                        </div>
+
+
                         <div class="col-md-3 mb-3">
                             <a href="{{ route('nilai.index') }}" class="btn btn-outline-warning btn-block">
                                 <i class="bi bi-award"></i> Input Nilai

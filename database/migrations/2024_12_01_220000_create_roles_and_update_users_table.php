@@ -18,7 +18,6 @@ return new class extends Migration
             $table->string('display_name', 100);
             $table->text('description')->nullable();
             $table->string('created_by', 100)->nullable();
-            $table->timestamp('created_at')->nullable();
             $table->timestamps();
             $table->string('updated_by', 100)->nullable();
             $table->string('deleted_by', 100)->nullable();
@@ -34,7 +33,7 @@ return new class extends Migration
             $table->foreignId('mahasiswa_id')->nullable()->after('dosen_id')->constrained('mahasiswa')->onDelete('set null');
             $table->boolean('is_active')->default(true)->after('password');
             $table->string('created_by', 100)->nullable()->after('remember_token');
-            $table->timestamp('created_at')->nullable()->after('created_by');
+            // $table->timestamp('created_at')->nullable()->after('created_by'); // Sudah ada dari timestamps()
             $table->string('updated_by', 100)->nullable();
             $table->string('deleted_by', 100)->nullable();
             $table->softDeletes();

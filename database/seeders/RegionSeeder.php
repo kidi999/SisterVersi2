@@ -25,16 +25,16 @@ class RegionSeeder extends Seeder
             'code' => '3174',
             'name' => 'Jakarta Selatan',
             'type' => 'Kota',
-            'inserted_by' => 'System',
-            'inserted_at' => now()
+            'created_by' => 'System',
+            'created_at' => now()
         ]);
 
         $kebayoran = SubRegency::create([
             'regency_id' => $jaksel->id,
             'code' => '317401',
             'name' => 'Kebayoran Baru',
-            'inserted_by' => 'System',
-            'inserted_at' => now()
+            'created_by' => 'System',
+            'created_at' => now()
         ]);
 
         Village::create([
@@ -42,8 +42,8 @@ class RegionSeeder extends Seeder
             'code' => '31740101',
             'name' => 'Gunung',
             'postal_code' => '12120',
-            'inserted_by' => 'System',
-            'inserted_at' => now()
+            'created_by' => 'System',
+            'created_at' => now()
         ]);
 
         Village::create([
@@ -51,16 +51,16 @@ class RegionSeeder extends Seeder
             'code' => '31740102',
             'name' => 'Kramat Pela',
             'postal_code' => '12130',
-            'inserted_by' => 'System',
-            'inserted_at' => now()
+            'created_by' => 'System',
+            'created_at' => now()
         ]);
 
         // Provinsi Jawa Barat
         $jabar = Province::create([
             'code' => '32',
             'name' => 'Jawa Barat',
-            'inserted_by' => 'System',
-            'inserted_at' => now()
+            'created_by' => 'System',
+            'created_at' => now()
         ]);
 
         $bandung = Regency::create([
@@ -68,16 +68,16 @@ class RegionSeeder extends Seeder
             'code' => '3273',
             'name' => 'Bandung',
             'type' => 'Kota',
-            'inserted_by' => 'System',
-            'inserted_at' => now()
+            'created_by' => 'System',
+            'created_at' => now()
         ]);
 
         $coblong = SubRegency::create([
             'regency_id' => $bandung->id,
             'code' => '327301',
             'name' => 'Coblong',
-            'inserted_by' => 'System',
-            'inserted_at' => now()
+            'created_by' => 'System',
+            'created_at' => now()
         ]);
 
         Village::create([
@@ -85,8 +85,8 @@ class RegionSeeder extends Seeder
             'code' => '32730101',
             'name' => 'Cipaganti',
             'postal_code' => '40131',
-            'inserted_by' => 'System',
-            'inserted_at' => now()
+            'created_by' => 'System',
+            'created_at' => now()
         ]);
 
         Village::create([
@@ -94,16 +94,16 @@ class RegionSeeder extends Seeder
             'code' => '32730102',
             'name' => 'Dago',
             'postal_code' => '40135',
-            'inserted_by' => 'System',
-            'inserted_at' => now()
+            'created_by' => 'System',
+            'created_at' => now()
         ]);
 
         // Provinsi Jawa Tengah
         $jateng = Province::create([
             'code' => '33',
             'name' => 'Jawa Tengah',
-            'inserted_by' => 'System',
-            'inserted_at' => now()
+            'created_by' => 'System',
+            'created_at' => now()
         ]);
 
         $semarang = Regency::create([
@@ -111,16 +111,16 @@ class RegionSeeder extends Seeder
             'code' => '3374',
             'name' => 'Semarang',
             'type' => 'Kota',
-            'inserted_by' => 'System',
-            'inserted_at' => now()
+            'created_by' => 'System',
+            'created_at' => now()
         ]);
 
         $tembalang = SubRegency::create([
             'regency_id' => $semarang->id,
             'code' => '337401',
             'name' => 'Tembalang',
-            'inserted_by' => 'System',
-            'inserted_at' => now()
+            'created_by' => 'System',
+            'created_at' => now()
         ]);
 
         Village::create([
@@ -128,8 +128,8 @@ class RegionSeeder extends Seeder
             'code' => '33740101',
             'name' => 'Tembalang',
             'postal_code' => '50275',
-            'inserted_by' => 'System',
-            'inserted_at' => now()
+            'created_by' => 'System',
+            'created_at' => now()
         ]);
 
         Village::create([
@@ -137,8 +137,8 @@ class RegionSeeder extends Seeder
             'code' => '33740102',
             'name' => 'Bulusan',
             'postal_code' => '50277',
-            'inserted_by' => 'System',
-            'inserted_at' => now()
+            'created_by' => 'System',
+            'created_at' => now()
         ]);
     }
 }

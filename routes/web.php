@@ -1,3 +1,4 @@
+
 <?php
 
 use Illuminate\Support\Facades\Route;
@@ -30,9 +31,7 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\PmbController;
 use App\Http\Controllers\TagihanMahasiswaController;
 use App\Http\Controllers\PembayaranMahasiswaController;
-use App\Http\Controllers\HariLiburController;
-use App\Http\Controllers\PertemuanKuliahController;
-use App\Http\Controllers\AbsensiMahasiswaController;
+
 
 // Public Routes
 Route::get('/', function () {
@@ -164,35 +163,12 @@ Route::middleware(['auth'])->group(function () {
         Route::get('api/available-ruang', [JadwalKuliahController::class, 'getAvailableRuang'])->name('api.available-ruang');
     });
 
-    // Routes untuk Hari Libur - Admin roles only
-    Route::middleware(['role:super_admin,admin_universitas,admin_fakultas,admin_prodi'])->group(function () {
-        Route::resource('hari-libur', HariLiburController::class)->parameters([
-            'hari-libur' => 'hariLibur'
-        ]);
-    });
 
-    // Routes untuk Pertemuan Kuliah - Admin roles and Dosen
-    Route::middleware(['role:super_admin,admin_universitas,admin_fakultas,admin_prodi,dosen'])->group(function () {
-        Route::resource('pertemuan-kuliah', PertemuanKuliahController::class)->parameters([
-            'pertemuan-kuliah' => 'pertemuanKuliah'
-        ]);
-        Route::post('pertemuan-kuliah/{pertemuanKuliah}/generate-qr', [PertemuanKuliahController::class, 'generateQR'])->name('pertemuan-kuliah.generate-qr');
-        Route::post('pertemuan-kuliah/{pertemuanKuliah}/reschedule', [PertemuanKuliahController::class, 'reschedule'])->name('pertemuan-kuliah.reschedule');
-    });
+    // (Dihapus) Routes untuk Pertemuan Kuliah - Admin roles and Dosen
 
-    // Routes untuk Absensi Mahasiswa - Admin roles and Dosen
-    Route::middleware(['role:super_admin,admin_universitas,admin_fakultas,admin_prodi,dosen'])->group(function () {
-        Route::resource('absensi-mahasiswa', AbsensiMahasiswaController::class)->only(['index', 'show', 'store', 'update']);
-        Route::post('absensi-mahasiswa/{absensiMahasiswa}/verify', [AbsensiMahasiswaController::class, 'verify'])->name('absensi-mahasiswa.verify');
-        Route::get('absensi-mahasiswa/report/{jadwalKuliah}', [AbsensiMahasiswaController::class, 'report'])->name('absensi-mahasiswa.report');
-        Route::get('absensi-mahasiswa/export/{jadwalKuliah}', [AbsensiMahasiswaController::class, 'export'])->name('absensi-mahasiswa.export');
-    });
 
-    // Routes untuk Mahasiswa - Kehadiran Saya
-    Route::middleware(['role:mahasiswa'])->group(function () {
-        Route::get('kehadiran-saya', [AbsensiMahasiswaController::class, 'kehadiranSaya'])->name('absensi-mahasiswa.kehadiran-saya');
-        Route::post('absensi-mahasiswa/scan-qr', [AbsensiMahasiswaController::class, 'scanQR'])->name('absensi-mahasiswa.scan-qr');
-    });
+
+
 
     // Routes untuk Pendaftaran Mahasiswa - Admin roles only
     Route::middleware(['role:super_admin,admin_universitas,admin_fakultas,admin_prodi'])->group(function () {

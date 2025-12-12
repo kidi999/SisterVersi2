@@ -17,7 +17,8 @@ return new class extends Migration
             $table->enum('hari', ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu']);
             $table->time('jam_mulai');
             $table->time('jam_selesai');
-            $table->string('ruangan', 20);
+            $table->foreignId('ruang_id')->nullable()->constrained('ruang')->onDelete('set null');
+            $table->string('ruangan', 20)->nullable();
             $table->timestamps();
         });
     }

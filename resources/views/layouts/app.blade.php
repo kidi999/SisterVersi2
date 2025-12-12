@@ -679,25 +679,9 @@
                             </a>
                         </li>
                         @endif
-                        @if(Auth::user()->hasRole(['super_admin', 'admin_universitas', 'admin_fakultas', 'admin_prodi']))
-                        <li class="nav-item">
-                            <a class="nav-link {{ request()->routeIs('hari-libur.*') ? 'active' : '' }}" href="{{ route('hari-libur.index') }}">
-                                <i class="bi bi-calendar-x"></i> Hari Libur
-                            </a>
-                        </li>
-                        @endif
-                        @if(Auth::user()->hasRole(['super_admin', 'admin_universitas', 'admin_fakultas', 'admin_prodi', 'dosen']))
-                        <li class="nav-item">
-                            <a class="nav-link {{ request()->routeIs('pertemuan-kuliah.*') ? 'active' : '' }}" href="{{ route('pertemuan-kuliah.index') }}">
-                                <i class="bi bi-calendar-check"></i> Pertemuan Kuliah
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link {{ request()->routeIs('absensi-mahasiswa.*') && !request()->routeIs('absensi-mahasiswa.kehadiran-saya') ? 'active' : '' }}" href="{{ route('absensi-mahasiswa.index') }}">
-                                <i class="bi bi-clipboard-check"></i> Absensi Mahasiswa
-                            </a>
-                        </li>
-                        @endif
+
+
+
                         @if(Auth::user()->hasRole(['super_admin', 'admin_universitas', 'admin_fakultas', 'admin_prodi']))
                         <li class="nav-item">
                             <a class="nav-link {{ request()->routeIs('kelas.*') && !request()->routeIs('kelas.trash') ? 'active' : '' }}" href="{{ route('kelas.index') }}">

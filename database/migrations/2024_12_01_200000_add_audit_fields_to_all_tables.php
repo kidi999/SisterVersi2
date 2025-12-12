@@ -24,13 +24,15 @@ return new class extends Migration
             'nilai'
         ];
 
-        foreach ($tables as $table) {
-            Schema::table($table, function (Blueprint $table) {
-                $table->string('created_by', 100)->nullable()->after('id');
-                $table->timestamp('created_at')->nullable()->after('created_by');
-                $table->string('updated_by', 100)->nullable()->after('updated_at');
-                $table->string('deleted_by', 100)->nullable()->after('updated_by');
-                $table->softDeletes();
+        foreach ($tables as $tblName) {
+            Schema::table($tblName, function (Blueprint $table) use ($tblName) {
+                // Untuk program_studi, kolom audit & softDeletes sudah ada di migrasi create
+                if ($tblName !== 'program_studi') {
+                    $table->string('created_by', 100)->nullable()->after('id');
+                    $table->string('updated_by', 100)->nullable()->after('updated_at');
+                    $table->string('deleted_by', 100)->nullable()->after('updated_by');
+                    $table->softDeletes();
+                }
             });
         }
     }
@@ -52,10 +54,12 @@ return new class extends Migration
             'nilai'
         ];
 
-        foreach ($tables as $table) {
-            Schema::table($table, function (Blueprint $table) {
-                $table->dropColumn(['created_by', 'created_at', 'updated_by', 'deleted_by']);
-                $table->dropSoftDeletes();
+        foreach ($tables as $tblName) {
+            Schema::table($tblName, function (Blueprint $table) use ($tblName) {
+                if ($tblName !== 'program_studi') {
+                    $table->dropColumn(['created_by', 'updated_by', 'deleted_by']);
+                    $table->dropSoftDeletes();
+                }
             });
         }
     }

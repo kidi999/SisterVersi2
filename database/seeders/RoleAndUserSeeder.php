@@ -24,40 +24,40 @@ class RoleAndUserSeeder extends Seeder
             'name' => Role::ADMIN_UNIVERSITAS,
             'display_name' => 'Admin Universitas',
             'description' => 'Administrator tingkat universitas',
-            'inserted_by' => 'System',
-            'inserted_at' => now()
+            'created_by' => 'System',
+            'created_at' => now()
         ]);
 
         $adminFakultas = Role::create([
             'name' => Role::ADMIN_FAKULTAS,
             'display_name' => 'Admin Fakultas',
             'description' => 'Administrator tingkat fakultas',
-            'inserted_by' => 'System',
-            'inserted_at' => now()
+            'created_by' => 'System',
+            'created_at' => now()
         ]);
 
         $adminProdi = Role::create([
             'name' => Role::ADMIN_PRODI,
             'display_name' => 'Admin Program Studi',
             'description' => 'Administrator tingkat program studi',
-            'inserted_by' => 'System',
-            'inserted_at' => now()
+            'created_by' => 'System',
+            'created_at' => now()
         ]);
 
         $dosen = Role::create([
             'name' => Role::DOSEN,
             'display_name' => 'Dosen',
             'description' => 'Dosen pengajar',
-            'inserted_by' => 'System',
-            'inserted_at' => now()
+            'created_by' => 'System',
+            'created_at' => now()
         ]);
 
         $mahasiswa = Role::create([
             'name' => Role::MAHASISWA,
             'display_name' => 'Mahasiswa',
             'description' => 'Mahasiswa aktif',
-            'inserted_by' => 'System',
-            'inserted_at' => now()
+            'created_by' => 'System',
+            'created_at' => now()
         ]);
 
         // Create default users
@@ -67,8 +67,8 @@ class RoleAndUserSeeder extends Seeder
             'password' => Hash::make('password'),
             'role_id' => $superAdmin->id,
             'is_active' => true,
-            'inserted_by' => 'System',
-            'inserted_at' => now()
+            'created_by' => 'System',
+            'created_at' => now()
         ]);
 
         User::create([
@@ -77,8 +77,8 @@ class RoleAndUserSeeder extends Seeder
             'password' => Hash::make('password'),
             'role_id' => $adminUniv->id,
             'is_active' => true,
-            'inserted_by' => 'System',
-            'inserted_at' => now()
+            'created_by' => 'System',
+            'created_at' => now()
         ]);
 
         User::create([
@@ -88,8 +88,8 @@ class RoleAndUserSeeder extends Seeder
             'role_id' => $adminFakultas->id,
             'fakultas_id' => 1, // Fakultas Teknik
             'is_active' => true,
-            'inserted_by' => 'System',
-            'inserted_at' => now()
+            'created_by' => 'System',
+            'created_at' => now()
         ]);
 
         User::create([
@@ -100,8 +100,8 @@ class RoleAndUserSeeder extends Seeder
             'fakultas_id' => 1,
             'program_studi_id' => 1, // Teknik Informatika
             'is_active' => true,
-            'inserted_by' => 'System',
-            'inserted_at' => now()
+            'created_by' => 'System',
+            'created_at' => now()
         ]);
     }
 }
