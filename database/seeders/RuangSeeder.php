@@ -161,7 +161,10 @@ class RuangSeeder extends Seeder
         }
 
         foreach ($ruangData as $data) {
-            Ruang::create($data);
+            Ruang::updateOrCreate(
+                ['kode_ruang' => $data['kode_ruang']],
+                $data
+            );
         }
 
         $this->command->info('Berhasil membuat ' . count($ruangData) . ' data ruang');
