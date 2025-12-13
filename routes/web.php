@@ -35,7 +35,7 @@ use App\Http\Controllers\PembayaranMahasiswaController;
 
 // Public Routes
 Route::get('/', function () {
-    return view('welcome');
+    return redirect()->route('university.profile');
 })->name('welcome');
 
 // PMB Public Routes (Tidak perlu login)
