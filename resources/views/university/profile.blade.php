@@ -1,38 +1,39 @@
-@extends('layouts.app')
+@extends('layouts.public')
 
 @section('title', 'Profil Universitas')
 
 @section('content')
-<div class="container-fluid">
-    <!-- Header Section -->
+<div class="container">
     <div class="row mb-4">
-        <div class="col-lg-12">
-            <div class="card shadow-lg border-0">
-                <div class="card-body text-center py-5" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-body text-center py-4">
                     @if($university->logo_path)
-                        <img src="{{ asset('storage/' . $university->logo_path) }}" alt="Logo {{ $university->nama }}" 
-                             class="img-fluid mb-4" style="max-height: 150px; background: white; padding: 15px; border-radius: 10px;">
+                        <img
+                            src="{{ asset('storage/' . $university->logo_path) }}"
+                            alt="Logo {{ $university->nama }}"
+                            class="img-fluid mb-3 bg-white border rounded p-2"
+                            style="max-height: 140px;"
+                        >
                     @else
-                        <div class="mb-4">
-                            <i class="fas fa-university fa-5x text-white"></i>
+                        <div class="mb-3">
+                            <i class="bi bi-mortarboard-fill text-primary" style="font-size: 3rem;"></i>
                         </div>
                     @endif
-                    <h1 class="text-white font-weight-bold mb-2">{{ $university->nama }}</h1>
+
+                    <h1 class="h3 mb-1">{{ $university->nama }}</h1>
                     @if($university->singkatan)
-                        <h4 class="text-white-50 mb-3">{{ $university->singkatan }}</h4>
+                        <div class="text-muted mb-3">{{ $university->singkatan }}</div>
                     @endif
-                    <div class="d-inline-flex flex-wrap justify-content-center gap-2 mt-3">
-                        <span class="badge badge-light badge-pill px-3 py-2 m-1">
-                            <i class="fas fa-building"></i> {{ $university->jenis }}
-                        </span>
-                        @if($university->akreditasi)
-                        <span class="badge badge-success badge-pill px-3 py-2 m-1">
-                            <i class="fas fa-award"></i> Akreditasi {{ $university->akreditasi }}
-                        </span>
+
+                    <div class="d-flex flex-wrap justify-content-center gap-2">
+                        @if($university->jenis)
+                            <span class="badge text-bg-secondary">{{ $university->jenis }}</span>
                         @endif
-                        <span class="badge badge-{{ $university->status == 'Aktif' ? 'success' : 'secondary' }} badge-pill px-3 py-2 m-1">
-                            <i class="fas fa-circle"></i> {{ $university->status }}
-                        </span>
+                        @if($university->akreditasi)
+                            <span class="badge text-bg-success">Akreditasi {{ $university->akreditasi }}</span>
+                        @endif
+                        <span class="badge text-bg-{{ $university->status === 'Aktif' ? 'primary' : 'secondary' }}">{{ $university->status }}</span>
                     </div>
                 </div>
             </div>
@@ -40,64 +41,63 @@
     </div>
 
     <!-- Main Content -->
-    <div class="row">
-        <!-- Left Column -->
+    <div class="row g-4">
         <div class="col-lg-8">
             <!-- Visi Section -->
             @if($university->visi)
-            <div class="card shadow mb-4">
+            <div class="card shadow-sm">
                 <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0"><i class="fas fa-eye"></i> Visi</h5>
+                    <h5 class="mb-0"><i class="bi bi-eye-fill"></i> Visi</h5>
                 </div>
                 <div class="card-body">
-                    <p class="text-justify" style="line-height: 1.8;">
+                    <div class="text-body" style="line-height: 1.8;">
                         {!! nl2br(e($university->visi)) !!}
-                    </p>
+                    </div>
                 </div>
             </div>
             @endif
 
             <!-- Misi Section -->
             @if($university->misi)
-            <div class="card shadow mb-4">
+            <div class="card shadow-sm">
                 <div class="card-header bg-success text-white">
-                    <h5 class="mb-0"><i class="fas fa-bullseye"></i> Misi</h5>
+                    <h5 class="mb-0"><i class="bi bi-bullseye"></i> Misi</h5>
                 </div>
                 <div class="card-body">
-                    <p class="text-justify" style="line-height: 1.8;">
+                    <div class="text-body" style="line-height: 1.8;">
                         {!! nl2br(e($university->misi)) !!}
-                    </p>
+                    </div>
                 </div>
             </div>
             @endif
 
             <!-- Sejarah Section -->
             @if($university->sejarah)
-            <div class="card shadow mb-4">
+            <div class="card shadow-sm">
                 <div class="card-header bg-info text-white">
-                    <h5 class="mb-0"><i class="fas fa-history"></i> Sejarah</h5>
+                    <h5 class="mb-0"><i class="bi bi-clock-history"></i> Sejarah</h5>
                 </div>
                 <div class="card-body">
-                    <p class="text-justify" style="line-height: 1.8;">
+                    <div class="text-body" style="line-height: 1.8;">
                         {!! nl2br(e($university->sejarah)) !!}
-                    </p>
+                    </div>
                 </div>
             </div>
             @endif
 
             <!-- Pimpinan Section -->
             @if($university->rektor || $university->wakil_rektor_1 || $university->wakil_rektor_2 || $university->wakil_rektor_3 || $university->wakil_rektor_4)
-            <div class="card shadow mb-4">
+            <div class="card shadow-sm">
                 <div class="card-header bg-dark text-white">
-                    <h5 class="mb-0"><i class="fas fa-users"></i> Struktur Pimpinan</h5>
+                    <h5 class="mb-0"><i class="bi bi-people-fill"></i> Struktur Pimpinan</h5>
                 </div>
                 <div class="card-body">
-                    <div class="row">
+                    <div class="row g-3">
                         @if($university->rektor)
-                        <div class="col-md-12 mb-4">
+                        <div class="col-12">
                             <div class="text-center p-3 bg-light rounded">
-                                <i class="fas fa-user-tie fa-3x text-primary mb-2"></i>
-                                <h6 class="font-weight-bold">Rektor</h6>
+                                <i class="bi bi-person-badge-fill text-primary" style="font-size: 2.25rem;"></i>
+                                <h6 class="fw-semibold mt-2">Rektor</h6>
                                 <p class="mb-0">{{ $university->rektor }}</p>
                                 @if($university->nip_rektor)
                                     <small class="text-muted">NIP: {{ $university->nip_rektor }}</small>
@@ -107,40 +107,40 @@
                         @endif
 
                         @if($university->wakil_rektor_1)
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-6">
                             <div class="text-center p-3 bg-light rounded">
-                                <i class="fas fa-user fa-2x text-secondary mb-2"></i>
-                                <h6 class="font-weight-bold">Wakil Rektor I</h6>
+                                <i class="bi bi-person-fill text-secondary" style="font-size: 1.75rem;"></i>
+                                <h6 class="fw-semibold mt-2">Wakil Rektor I</h6>
                                 <p class="mb-0">{{ $university->wakil_rektor_1 }}</p>
                             </div>
                         </div>
                         @endif
 
                         @if($university->wakil_rektor_2)
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-6">
                             <div class="text-center p-3 bg-light rounded">
-                                <i class="fas fa-user fa-2x text-secondary mb-2"></i>
-                                <h6 class="font-weight-bold">Wakil Rektor II</h6>
+                                <i class="bi bi-person-fill text-secondary" style="font-size: 1.75rem;"></i>
+                                <h6 class="fw-semibold mt-2">Wakil Rektor II</h6>
                                 <p class="mb-0">{{ $university->wakil_rektor_2 }}</p>
                             </div>
                         </div>
                         @endif
 
                         @if($university->wakil_rektor_3)
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-6">
                             <div class="text-center p-3 bg-light rounded">
-                                <i class="fas fa-user fa-2x text-secondary mb-2"></i>
-                                <h6 class="font-weight-bold">Wakil Rektor III</h6>
+                                <i class="bi bi-person-fill text-secondary" style="font-size: 1.75rem;"></i>
+                                <h6 class="fw-semibold mt-2">Wakil Rektor III</h6>
                                 <p class="mb-0">{{ $university->wakil_rektor_3 }}</p>
                             </div>
                         </div>
                         @endif
 
                         @if($university->wakil_rektor_4)
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-6">
                             <div class="text-center p-3 bg-light rounded">
-                                <i class="fas fa-user fa-2x text-secondary mb-2"></i>
-                                <h6 class="font-weight-bold">Wakil Rektor IV</h6>
+                                <i class="bi bi-person-fill text-secondary" style="font-size: 1.75rem;"></i>
+                                <h6 class="fw-semibold mt-2">Wakil Rektor IV</h6>
                                 <p class="mb-0">{{ $university->wakil_rektor_4 }}</p>
                             </div>
                         </div>
@@ -151,27 +151,25 @@
             @endif
         </div>
 
-        <!-- Right Column -->
         <div class="col-lg-4">
-            <!-- Informasi Umum -->
-            <div class="card shadow mb-4">
+            <div class="card shadow-sm">
                 <div class="card-header bg-primary text-white">
-                    <h6 class="mb-0"><i class="fas fa-info-circle"></i> Informasi Umum</h6>
+                    <h6 class="mb-0"><i class="bi bi-info-circle-fill"></i> Informasi Umum</h6>
                 </div>
                 <div class="card-body">
-                    <table class="table table-sm table-borderless">
+                    <table class="table table-sm mb-0">
                         <tr>
                             <td width="40%"><strong>Kode</strong></td>
                             <td>{{ $university->kode }}</td>
                         </tr>
                         <tr>
                             <td><strong>Jenis</strong></td>
-                            <td><span class="badge badge-info">{{ $university->jenis }}</span></td>
+                            <td><span class="badge text-bg-secondary">{{ $university->jenis }}</span></td>
                         </tr>
                         <tr>
                             <td><strong>Status</strong></td>
                             <td>
-                                <span class="badge badge-{{ $university->status == 'Aktif' ? 'success' : 'secondary' }}">
+                                <span class="badge text-bg-{{ $university->status === 'Aktif' ? 'primary' : 'secondary' }}">
                                     {{ $university->status }}
                                 </span>
                             </td>
@@ -188,16 +186,16 @@
 
             <!-- Akreditasi -->
             @if($university->akreditasi)
-            <div class="card shadow mb-4">
+            <div class="card shadow-sm mt-4">
                 <div class="card-header bg-success text-white">
-                    <h6 class="mb-0"><i class="fas fa-award"></i> Akreditasi</h6>
+                    <h6 class="mb-0"><i class="bi bi-award-fill"></i> Akreditasi</h6>
                 </div>
                 <div class="card-body">
                     <div class="text-center mb-3">
-                        <div class="display-4 font-weight-bold text-success">{{ $university->akreditasi }}</div>
+                        <div class="display-5 fw-bold text-success">{{ $university->akreditasi }}</div>
                     </div>
                     @if($university->no_sk_akreditasi)
-                    <table class="table table-sm table-borderless">
+                    <table class="table table-sm mb-0">
                         <tr>
                             <td width="40%"><strong>No. SK</strong></td>
                             <td>{{ $university->no_sk_akreditasi }}</td>
@@ -221,14 +219,14 @@
             @endif
 
             <!-- Kontak -->
-            <div class="card shadow mb-4">
+            <div class="card shadow-sm mt-4">
                 <div class="card-header bg-warning text-dark">
-                    <h6 class="mb-0"><i class="fas fa-phone"></i> Kontak</h6>
+                    <h6 class="mb-0"><i class="bi bi-telephone-fill"></i> Kontak</h6>
                 </div>
                 <div class="card-body">
                     @if($university->email)
                     <div class="mb-3">
-                        <i class="fas fa-envelope text-primary"></i>
+                        <i class="bi bi-envelope-fill text-primary"></i>
                         <strong>Email:</strong><br>
                         <a href="mailto:{{ $university->email }}">{{ $university->email }}</a>
                     </div>
@@ -236,7 +234,7 @@
 
                     @if($university->telepon)
                     <div class="mb-3">
-                        <i class="fas fa-phone text-success"></i>
+                        <i class="bi bi-telephone-fill text-success"></i>
                         <strong>Telepon:</strong><br>
                         {{ $university->telepon }}
                     </div>
@@ -244,7 +242,7 @@
 
                     @if($university->fax)
                     <div class="mb-3">
-                        <i class="fas fa-fax text-info"></i>
+                        <i class="bi bi-printer-fill text-info"></i>
                         <strong>Fax:</strong><br>
                         {{ $university->fax }}
                     </div>
@@ -252,7 +250,7 @@
 
                     @if($university->website)
                     <div class="mb-0">
-                        <i class="fas fa-globe text-danger"></i>
+                        <i class="bi bi-globe2 text-danger"></i>
                         <strong>Website:</strong><br>
                         <a href="{{ $university->website }}" target="_blank">{{ $university->website }}</a>
                     </div>
@@ -261,9 +259,9 @@
             </div>
 
             <!-- Alamat -->
-            <div class="card shadow mb-4">
+            <div class="card shadow-sm mt-4">
                 <div class="card-header bg-danger text-white">
-                    <h6 class="mb-0"><i class="fas fa-map-marker-alt"></i> Alamat</h6>
+                    <h6 class="mb-0"><i class="bi bi-geo-alt-fill"></i> Alamat</h6>
                 </div>
                 <div class="card-body">
                     @if($university->alamat)
@@ -271,22 +269,22 @@
                     @endif
 
                     @if($university->village)
-                    <table class="table table-sm table-borderless">
+                    <table class="table table-sm mb-0">
                         <tr>
-                            <td><i class="fas fa-map-pin text-primary"></i> Desa/Kelurahan</td>
-                            <td>{{ $university->village->nama }}</td>
+                            <td><i class="bi bi-pin-map-fill text-primary"></i> Desa/Kelurahan</td>
+                            <td>{{ $university->village->name }}</td>
                         </tr>
                         <tr>
-                            <td><i class="fas fa-map-signs text-success"></i> Kecamatan</td>
-                            <td>{{ $university->village->subRegency->nama }}</td>
+                            <td><i class="bi bi-signpost-2-fill text-success"></i> Kecamatan</td>
+                            <td>{{ $university->village->subRegency->name }}</td>
                         </tr>
                         <tr>
-                            <td><i class="fas fa-city text-info"></i> Kabupaten/Kota</td>
-                            <td>{{ $university->village->subRegency->regency->nama }}</td>
+                            <td><i class="bi bi-buildings-fill text-info"></i> Kabupaten/Kota</td>
+                            <td>{{ $university->village->subRegency->regency->name }}</td>
                         </tr>
                         <tr>
-                            <td><i class="fas fa-flag text-warning"></i> Provinsi</td>
-                            <td>{{ $university->village->subRegency->regency->province->nama }}</td>
+                            <td><i class="bi bi-flag-fill text-warning"></i> Provinsi</td>
+                            <td>{{ $university->village->subRegency->regency->province->name }}</td>
                         </tr>
                     </table>
                     @endif
@@ -302,9 +300,9 @@
 
             <!-- Pendirian -->
             @if($university->no_sk_pendirian || $university->no_izin_operasional)
-            <div class="card shadow mb-4">
+            <div class="card shadow-sm mt-4">
                 <div class="card-header bg-secondary text-white">
-                    <h6 class="mb-0"><i class="fas fa-certificate"></i> Legalitas</h6>
+                    <h6 class="mb-0"><i class="bi bi-patch-check-fill"></i> Legalitas</h6>
                 </div>
                 <div class="card-body">
                     @if($university->no_sk_pendirian)
@@ -332,27 +330,12 @@
         </div>
     </div>
 
-    <!-- Back Button -->
     <div class="row">
-        <div class="col-12 text-center mb-4">
-            <a href="{{ route('universities.index') }}" class="btn btn-secondary btn-lg">
-                <i class="fas fa-arrow-left"></i> Kembali ke Daftar
+        <div class="col-12 text-center mt-4">
+            <a href="{{ route('welcome') }}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Kembali ke Beranda
             </a>
         </div>
     </div>
 </div>
-
-@push('styles')
-<style>
-.badge-pill {
-    font-size: 0.9rem;
-}
-.card {
-    transition: transform 0.2s;
-}
-.card:hover {
-    transform: translateY(-5px);
-}
-</style>
-@endpush
 @endsection

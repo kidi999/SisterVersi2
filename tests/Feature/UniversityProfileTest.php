@@ -7,20 +7,12 @@ namespace Tests\Feature;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 use App\Models\University;
-use App\Models\User;
 
 class UniversityProfileTest extends TestCase
 {
     use RefreshDatabase;
 
-    protected function setUp(): void
-    {
-        parent::setUp();
-        $this->user = User::factory()->withSuperAdminRole()->create();
-        $this->actingAs($this->user);
-    }
-
-    public function test_university_profile_page_shows_data()
+    public function test_guest_can_view_university_profile_page_shows_data()
     {
         $university = University::factory()->create([
             'status' => 'Aktif',

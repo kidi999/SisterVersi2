@@ -51,6 +51,9 @@ Route::prefix('pmb')->name('pmb.')->group(function () {
     Route::post('/resend-verification', [PmbController::class, 'resendVerification'])->name('resend-verification');
 });
 
+// Public University Profile (Tidak perlu login)
+Route::get('university-profile', [UniversityController::class, 'profile'])->name('university.profile');
+
 // File Upload (Public upload for PMB; controller restricts guest usage)
 Route::post('api/file-upload', [FileUploadController::class, 'upload'])->name('api.file-upload.upload');
 
@@ -338,9 +341,6 @@ Route::middleware(['auth'])->group(function () {
         Route::patch('universities/{id}/restore', [UniversityController::class, 'restore'])->name('universities.restore');
         Route::delete('universities/{id}/force-delete', [UniversityController::class, 'forceDelete'])->name('universities.force-delete');
     });
-
-    // Public University Profile - All authenticated users
-    Route::get('university-profile', [UniversityController::class, 'profile'])->name('university.profile');
 
     // Routes untuk Tagihan Mahasiswa - Admin roles only
     Route::middleware(['role:super_admin,admin_universitas,admin_fakultas,admin_prodi'])->group(function () {
