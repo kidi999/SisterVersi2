@@ -106,7 +106,10 @@ class JenisPembayaranSeeder extends Seeder
         ];
 
         foreach ($jenisPembayaran as $jenis) {
-            JenisPembayaran::create($jenis);
+            JenisPembayaran::updateOrCreate(
+                ['kode' => $jenis['kode']],
+                $jenis
+            );
         }
     }
 }
