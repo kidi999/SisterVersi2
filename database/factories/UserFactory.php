@@ -29,7 +29,24 @@ class UserFactory extends Factory
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
+            'is_active' => true,
         ];
+    }
+    
+    /**
+     * Assign super_admin role for testing.
+     */
+    public function withSuperAdminRole(): static
+    {
+        $role = \App\Models\Role::firstOrCreate(
+            ['name' => 'super_admin'],
+            ['display_name' => 'Super Admin', 'description' => 'Super admin for tests']
+        );
+        return $this->state(function (array $attributes) use ($role) {
+            return [
+                'role_id' => $role->id,
+            ];
+        });
     }
 
     /**

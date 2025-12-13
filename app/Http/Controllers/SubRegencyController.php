@@ -1,8 +1,6 @@
 <?php
 
 namespace App\Http\Controllers;
-
-use App\Models\SubRegency;
 use App\Models\Regency;
 use App\Models\Province;
 use Illuminate\Http\Request;
@@ -10,37 +8,67 @@ use Illuminate\Support\Facades\Auth;
 
 class SubRegencyController extends Controller
 {
+    /**
+     * Export data kecamatan ke CSV
+     */
+    public function exportCsv()
+    {
+        $subRegencies = \App\Models\SubRegency::with('regency.province')->orderBy('name')->get();
+        $filename = 'sub_regencies_' . now()->format('Ymd_His') . '.csv';
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => "attachment; filename=\"$filename\"",
+        ];
+        $callback = function () use ($subRegencies) {
+            $handle = fopen('php://output', 'w');
+            fputcsv($handle, ['No', 'Kode', 'Nama Kecamatan', 'Kabupaten/Kota', 'Provinsi']);
+            foreach ($subRegencies as $i => $sub) {
+                fputcsv($handle, [
+                    $i + 1,
+                    $sub->code,
+                    $sub->name,
+                    $sub->regency ? $sub->regency->name : '',
+                    $sub->regency && $sub->regency->province ? $sub->regency->province->name : ''
+                ]);
+            }
+            fclose($handle);
+        };
+        return response()->stream($callback, 200, $headers);
+    }
+
+    /**
+     * Export data kecamatan ke PDF
+     */
+    public function exportPdf()
+    {
+        $subRegencies = \App\Models\SubRegency::with('regency.province')->orderBy('name')->get();
+        $pdf = \PDF::loadView('wilayah.sub-regency._export_pdf', compact('subRegencies'));
+        return $pdf->download('sub_regencies_' . now()->format('Ymd_His') . '.pdf');
+    }
+
+    /**
+     * Tampilkan daftar kecamatan dengan paginasi
+     */
     public function index(Request $request)
     {
-        $query = SubRegency::with(['regency.province']);
-
-        // Filter by province
-        if ($request->filled('province_id')) {
-            $query->whereHas('regency', function($q) use ($request) {
-                $q->where('province_id', $request->province_id);
-            });
-        }
-
-        // Filter by regency
-        if ($request->filled('regency_id')) {
-            $query->where('regency_id', $request->regency_id);
-        }
-
-        // Search
+        $query = \App\Models\SubRegency::with('regency.province')->orderBy('name');
         if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('code', 'like', "%{$search}%");
-            });
+            $search = $request->input('search');
+            $query->where('name', 'like', "%$search%")
+                ->orWhere('code', 'like', "%$search%")
+                ->orWhereHas('regency', function ($q) use ($search) {
+                    $q->where('name', 'like', "%$search%")
+                        ->orWhereHas('province', function ($qq) use ($search) {
+                            $qq->where('name', 'like', "%$search%");
+                        });
+                });
         }
-
-        $subRegencies = $query->orderBy('name')->get();
+        $subRegencies = $query->paginate(10)->withQueryString();
         $provinces = Province::orderBy('name')->get();
         $regencies = Regency::orderBy('name')->get();
-
         return view('sub-regency.index', compact('subRegencies', 'provinces', 'regencies'));
     }
+    // ...existing code...
 
     public function create()
     {

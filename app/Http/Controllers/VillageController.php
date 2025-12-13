@@ -11,6 +11,45 @@ use Illuminate\Support\Facades\Auth;
 
 class VillageController extends Controller
 {
+    /**
+     * Export data desa/kelurahan ke CSV
+     */
+    public function exportCsv()
+    {
+        $villages = Village::with('subRegency.regency.province')->orderBy('name')->get();
+        $filename = 'villages_' . now()->format('Ymd_His') . '.csv';
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => "attachment; filename=\"$filename\"",
+        ];
+        $callback = function () use ($villages) {
+            $handle = fopen('php://output', 'w');
+            fputcsv($handle, ['No', 'Kode', 'Nama Desa/Kelurahan', 'Kecamatan', 'Kabupaten/Kota', 'Provinsi', 'Kode Pos']);
+            foreach ($villages as $i => $village) {
+                fputcsv($handle, [
+                    $i + 1,
+                    $village->code,
+                    $village->name,
+                    $village->subRegency ? $village->subRegency->name : '',
+                    $village->subRegency && $village->subRegency->regency ? ($village->subRegency->regency->type . ' ' . $village->subRegency->regency->name) : '',
+                    $village->subRegency && $village->subRegency->regency && $village->subRegency->regency->province ? $village->subRegency->regency->province->name : '',
+                    $village->postal_code,
+                ]);
+            }
+            fclose($handle);
+        };
+        return response()->stream($callback, 200, $headers);
+    }
+
+    /**
+     * Export data desa/kelurahan ke PDF
+     */
+    public function exportPdf()
+    {
+        $villages = Village::with('subRegency.regency.province')->orderBy('name')->get();
+        $pdf = \PDF::loadView('wilayah.village._export_pdf', compact('villages'));
+        return $pdf->download('villages_' . now()->format('Ymd_His') . '.pdf');
+    }
     public function index(Request $request)
     {
         $query = Village::with(['subRegency.regency.province']);
@@ -44,7 +83,7 @@ class VillageController extends Controller
             });
         }
 
-        $villages = $query->orderBy('name')->get();
+        $villages = $query->orderBy('name')->paginate(25)->withQueryString();
         $provinces = Province::orderBy('name')->get();
         $regencies = Regency::orderBy('name')->get();
         $subRegencies = SubRegency::orderBy('name')->get();

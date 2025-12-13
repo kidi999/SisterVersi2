@@ -59,7 +59,7 @@ return new class extends Migration
             $table->index('tanggal_bayar', 'idx_tgl_bayar');
             $table->index('status_verifikasi', 'idx_status_verif');
             $table->index(['mahasiswa_id', 'tanggal_bayar'], 'idx_mhs_tgl_bayar');
-            $table->index('deleted_at', 'idx_deleted_at');
+            // $table->index('deleted_at', 'idx_deleted_at');
         });
     }
 

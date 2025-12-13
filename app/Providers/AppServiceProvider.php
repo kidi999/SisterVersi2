@@ -6,6 +6,7 @@ use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
 {
+    // boot() sudah didefinisikan di bawah
     /**
      * Register any application services.
      */
@@ -19,6 +20,6 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        \Illuminate\Pagination\Paginator::useBootstrapFive();
     }
 }

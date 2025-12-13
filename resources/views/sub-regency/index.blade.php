@@ -6,9 +6,17 @@
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="h3 mb-0">Manajemen Kecamatan</h1>
-        <a href="{{ route('sub-regency.create') }}" class="btn btn-primary">
-            <i class="bi bi-plus-circle"></i> Tambah Kecamatan
-        </a>
+        <div class="d-flex gap-2">
+            <a href="{{ route('sub-regency.create') }}" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> Tambah Kecamatan
+            </a>
+            <a href="{{ route('sub-regency.exportCsv', request()->all()) }}" class="btn btn-success">
+                <i class="bi bi-file-earmark-excel"></i> Export CSV
+            </a>
+            <a href="{{ route('sub-regency.exportPdf', request()->all()) }}" class="btn btn-danger">
+                <i class="bi bi-file-earmark-pdf"></i> Export PDF
+            </a>
+        </div>
     </div>
 
     @if(session('success'))
@@ -69,78 +77,28 @@
                 </div>
             </form>
 
-            @if($subRegencies->count() > 0)
-                <div class="table-responsive">
-                    <table class="table table-striped table-hover" id="subRegencyTable">
-                        <thead class="table-dark">
-                            <tr>
-                                <th width="5%">No</th>
-                                <th width="10%">Kode</th>
-                                <th width="20%">Nama Kecamatan</th>
-                                <th width="20%">Kabupaten/Kota</th>
-                                <th width="15%">Provinsi</th>
-                                <th width="10%">Jumlah Desa</th>
-                                <th width="10%">Dokumen</th>
-                                <th width="10%">Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach($subRegencies as $key => $subRegency)
-                                <tr>
-                                    <td>{{ $key + 1 }}</td>
-                                    <td><code>{{ $subRegency->code }}</code></td>
-                                    <td><strong>{{ $subRegency->name }}</strong></td>
-                                    <td>
-                                        {{ $subRegency->regency->type }} {{ $subRegency->regency->name }}
-                                    </td>
-                                    <td>{{ $subRegency->regency->province->name }}</td>
-                                    <td>
-                                        <span class="badge bg-info">
-                                            {{ $subRegency->villages->count() }} Desa/Kelurahan
-                                        </span>
-                                    </td>
-                                    <td>
-                                        @if($subRegency->files->count() > 0)
-                                            <span class="badge bg-success">
-                                                <i class="bi bi-file-earmark-check"></i> {{ $subRegency->files->count() }}
-                                            </span>
-                                        @else
-                                            <span class="badge bg-secondary">
-                                                <i class="bi bi-file-earmark"></i> 0
-                                            </span>
-                                        @endif
-                                    </td>
-                                    <td>
-                                        <div class="btn-group" role="group">
-                                            <a href="{{ route('sub-regency.show', $subRegency->id) }}" 
-                                               class="btn btn-sm btn-info" title="Detail">
-                                                <i class="bi bi-eye"></i>
-                                            </a>
-                                            <a href="{{ route('sub-regency.edit', $subRegency->id) }}" 
-                                               class="btn btn-sm btn-warning" title="Edit">
-                                                <i class="bi bi-pencil"></i>
-                                            </a>
-                                            <form action="{{ route('sub-regency.destroy', $subRegency->id) }}" 
-                                                  method="POST" class="d-inline"
-                                                  onsubmit="return confirm('Yakin ingin menghapus kecamatan ini?')">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="btn btn-sm btn-danger" title="Hapus">
-                                                    <i class="bi bi-trash"></i>
-                                                </button>
-                                            </form>
-                                        </div>
-                                    </td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-            @else
-                <div class="alert alert-info mb-0">
-                    <i class="bi bi-info-circle"></i> Tidak ada data kecamatan.
-                </div>
-            @endif
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th width="5%">No</th>
+                            <th width="10%">Kode</th>
+                            <th width="20%">Nama Kecamatan</th>
+                            <th width="20%">Kabupaten/Kota</th>
+                            <th width="15%">Provinsi</th>
+                            <th width="10%">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @include('wilayah.sub-regency._table', ['subRegencies' => $subRegencies])
+                    </tbody>
+                </table>
+            </div>
+            <div class="d-flex justify-content-center align-items-center mt-3" id="pagination-wrapper">
+                <nav aria-label="Paginasi data kecamatan">
+                    {{ $subRegencies->appends(request()->except('page'))->links() }}
+                </nav>
+            </div>
         </div>
     </div>
 </div>
@@ -196,6 +154,39 @@ $(document).ready(function() {
     if ($('#province_id').val()) {
         $('#province_id').trigger('change');
     }
+@push('scripts')
+<script>
+$(document).ready(function() {
+    // Filter regencies by province
+    $('#province_id').on('change', function() {
+        const provinceId = $(this).val();
+        const $regencySelect = $('#regency_id');
+        if (provinceId) {
+            $regencySelect.find('option').each(function() {
+                const $option = $(this);
+                if ($option.val() === '') {
+                    $option.show();
+                } else if ($option.data('province') == provinceId) {
+                    $option.show();
+                } else {
+                    $option.hide();
+                }
+            });
+            const selectedRegency = $regencySelect.val();
+            if (selectedRegency) {
+                const selectedOption = $regencySelect.find('option[value="' + selectedRegency + '"]');
+                if (selectedOption.data('province') != provinceId) {
+                    $regencySelect.val('');
+                }
+            }
+        } else {
+            $regencySelect.find('option').show();
+        }
+    });
+    if ($('#province_id').val()) {
+        $('#province_id').trigger('change');
+    }
 });
 </script>
 @endpush
+        }

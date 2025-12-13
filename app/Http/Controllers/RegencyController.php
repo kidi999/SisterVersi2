@@ -2,24 +2,132 @@
 
 namespace App\Http\Controllers;
 
+
 use App\Models\Regency;
 use App\Models\Province;
 use App\Models\FileUpload;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class RegencyController extends Controller
 {
     /**
+     * Export regencies as CSV.
+     */
+    public function exportCsv(Request $request)
+    {
+        $search = $request->input('search');
+        $sort = $request->input('sort', 'name');
+        $order = $request->input('order', 'asc');
+        $query = Regency::with('province')->orderBy($sort, $order);
+        if ($search) {
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'like', "%$search%")
+                  ->orWhere('code', 'like', "%$search%")
+                  ->orWhereHas('province', function($q2) use ($search) {
+                      $q2->where('name', 'like', "%$search%")
+                          ->orWhere('code', 'like', "%$search%") ;
+                  });
+            });
+        }
+        $regencies = $query->get();
+
+        $filename = 'kabupaten_kota.csv';
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ];
+
+        $callback = function() use ($regencies) {
+            $handle = fopen('php://output', 'w');
+            // Header
+            fputcsv($handle, ['ID', 'Kode', 'Nama Kabupaten/Kota', 'Provinsi', 'Jml Kecamatan']);
+            // Data
+            foreach ($regencies as $regency) {
+                fputcsv($handle, [
+                    $regency->id,
+                    $regency->code,
+                    $regency->name,
+                    $regency->province ? $regency->province->name : '-',
+                    $regency->subRegencies()->count(),
+                ]);
+            }
+            fclose($handle);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
+    /**
+     * Export regencies as PDF.
+     */
+    public function exportPdf(Request $request)
+    {
+        $search = $request->input('search');
+        $sort = $request->input('sort', 'name');
+        $order = $request->input('order', 'asc');
+        $query = Regency::with('province')->orderBy($sort, $order);
+        if ($search) {
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'like', "%$search%")
+                  ->orWhere('code', 'like', "%$search%")
+                  ->orWhereHas('province', function($q2) use ($search) {
+                      $q2->where('name', 'like', "%$search%")
+                          ->orWhere('code', 'like', "%$search%") ;
+                  });
+            });
+        }
+        $regencies = $query->get();
+        $pdf = Pdf::loadView('wilayah.regency._export_pdf', compact('regencies'));
+        return $pdf->download('kabupaten_kota.pdf');
+    }
+
+    /**
+     * AJAX search for regencies (with pagination, sorting).
+     */
+    public function searchAjax(Request $request)
+    {
+        $search = $request->input('search');
+        $sort = $request->input('sort', 'name');
+        $order = $request->input('order', 'asc');
+        $query = Regency::with('province')->withCount('subRegencies')->orderBy($sort, $order);
+        if ($search && strlen($search) >= 2) {
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'like', "%$search%")
+                  ->orWhere('code', 'like', "%$search%")
+                  ->orWhereHas('province', function($q2) use ($search) {
+                      $q2->where('name', 'like', "%$search%")
+                          ->orWhere('code', 'like', "%$search%") ;
+                  });
+            });
+        }
+        $regencies = $query->paginate(10);
+        return response()->json([
+            'html' => view('wilayah.regency._table', compact('regencies'))->render()
+        ]);
+    }
+    /**
      * Display a listing of the regencies.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $regencies = Regency::with('province')
-            ->withCount('subRegencies')
-            ->get();
-
-        return view('wilayah.regency.index', compact('regencies'));
+        $search = $request->input('search');
+        $sort = $request->input('sort', 'name');
+        $order = $request->input('order', 'asc');
+        $query = Regency::with('province')->withCount('subRegencies')->orderBy($sort, $order);
+        if ($search) {
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'like', "%$search%")
+                  ->orWhere('code', 'like', "%$search%")
+                  ->orWhereHas('province', function($q2) use ($search) {
+                      $q2->where('name', 'like', "%$search%")
+                          ->orWhere('code', 'like', "%$search%") ;
+                  });
+            });
+        }
+        $regencies = $query->paginate(10)->withQueryString();
+        return view('wilayah.regency.index', compact('regencies', 'search', 'sort', 'order'));
     }
 
     /**

@@ -19,6 +19,7 @@ class DatabaseSeeder extends Seeder
             RegionSeeder::class,
             FakultasSeeder::class,
             RoleAndUserSeeder::class,
+            UniversitySeeder::class,
         ]);
     }
 }

@@ -7,7 +7,7 @@
 <div class="card">
     <div class="card-header d-flex justify-content-between align-items-center">
         <h5 class="mb-0">Daftar Kabupaten/Kota</h5>
-        <div>
+        <div class="d-flex gap-2">
             @if(Auth::user()->hasRole(['super_admin']))
             <a href="{{ route('regency.trash') }}" class="btn btn-warning btn-sm">
                 <i class="bi bi-trash"></i> Trash
@@ -15,6 +15,12 @@
             @endif
             <a href="{{ route('regency.create') }}" class="btn btn-primary btn-sm">
                 <i class="bi bi-plus-circle"></i> Tambah Kabupaten/Kota
+            </a>
+            <a href="{{ route('regency.exportCsv', ['search' => request('search'), 'sort' => request('sort'), 'order' => request('order')]) }}" class="btn btn-success btn-sm">
+                <i class="bi bi-file-earmark-excel"></i> Export CSV
+            </a>
+            <a href="{{ route('regency.exportPdf', ['search' => request('search'), 'sort' => request('sort'), 'order' => request('order')]) }}" class="btn btn-danger btn-sm">
+                <i class="bi bi-file-earmark-pdf"></i> Export PDF
             </a>
         </div>
     </div>
@@ -26,6 +32,51 @@
             </div>
         @endif
 
+        <div class="mb-3">
+            <div class="input-group">
+                <input type="text" name="search" id="searchInput" class="form-control" placeholder="Cari kode/nama kabupaten/kota/provinsi..." value="{{ request('search') }}" autocomplete="off">
+            </div>
+        </div>
+        <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var input = document.getElementById('searchInput');
+            var tbody = document.querySelector('table tbody');
+            var pagin = document.querySelector('.mt-3');
+            var timer = null;
+            function fetchData(val, page) {
+                var url = "{{ route('regency.searchAjax') }}?search=" + encodeURIComponent(val || '');
+                if(page) url += "&page="+page;
+                fetch(url)
+                    .then(res => res.json())
+                    .then(data => {
+                        tbody.innerHTML = data.html;
+                        // fetch paginasi baru
+                        fetch(url+"&pagination=1").then(r=>r.text()).then(html=>{
+                            var temp = document.createElement('div');
+                            temp.innerHTML = html;
+                            var newPagin = temp.querySelector('.mt-3');
+                            if(newPagin && pagin) pagin.innerHTML = newPagin.innerHTML;
+                        });
+                    });
+            }
+            input.addEventListener('input', function() {
+                var val = input.value;
+                clearTimeout(timer);
+                if(val.length >= 2 || val.length === 0) {
+                    timer = setTimeout(function(){ fetchData(val); }, 350);
+                }
+            });
+            // handle paginasi ajax
+            document.addEventListener('click', function(e){
+                if(e.target.closest('.pagination a')){
+                    e.preventDefault();
+                    var a = e.target.closest('a');
+                    var page = a.href.split('page=')[1];
+                    fetchData(input.value, page);
+                }
+            });
+        });
+        </script>
         <div class="table-responsive">
             <table class="table table-striped table-hover">
                 <thead class="table-light">
@@ -39,40 +90,14 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse($regencies as $index => $regency)
-                    <tr>
-                        <td>{{ $index + 1 }}</td>
-                        <td><span class="badge bg-primary">{{ $regency->code }}</span></td>
-                        <td>{{ $regency->province->name }}</td>
-                        <td>{{ $regency->name }}</td>
-                        <td class="text-center">
-                            <span class="badge bg-info">{{ $regency->sub_regencies_count }}</span>
-                        </td>
-                        <td class="text-center">
-                            <div class="btn-group btn-group-sm" role="group">
-                                <a href="{{ route('regency.show', $regency) }}" class="btn btn-info" title="Detail">
-                                    <i class="bi bi-eye"></i>
-                                </a>
-                                <a href="{{ route('regency.edit', $regency) }}" class="btn btn-warning" title="Edit">
-                                    <i class="bi bi-pencil"></i>
-                                </a>
-                                <form action="{{ route('regency.destroy', $regency) }}" method="POST" class="d-inline" onsubmit="return confirm('Yakin ingin menghapus kabupaten/kota ini?')">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="btn btn-danger" title="Hapus">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
-                                </form>
-                            </div>
-                        </td>
-                    </tr>
-                    @empty
-                    <tr>
-                        <td colspan="6" class="text-center text-muted">Tidak ada data kabupaten/kota</td>
-                    </tr>
-                    @endforelse
+                    @include('wilayah.regency._table', ['regencies' => $regencies])
                 </tbody>
             </table>
+        </div>
+        <div class="d-flex justify-content-center align-items-center mt-3" id="pagination-wrapper">
+            <nav aria-label="Paginasi data kabupaten/kota">
+                {{ $regencies->appends(['search' => request('search'), 'sort' => request('sort'), 'order' => request('order')])->links() }}
+            </nav>
         </div>
     </div>
 </div>

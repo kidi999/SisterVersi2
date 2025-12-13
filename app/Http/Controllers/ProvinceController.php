@@ -6,13 +6,72 @@ use App\Models\Province;
 use App\Models\FileUpload;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\ProvincesExport;
+use App\Exports\ProvincesExportView;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class ProvinceController extends Controller
 {
+    public function exportCsv(Request $request)
+    {
+        $search = $request->input('search');
+        $query = Province::orderBy('name');
+        if ($search) {
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'like', "%$search%")
+                  ->orWhere('code', 'like', "%$search%");
+            });
+        }
+        $provinces = $query->get(['id', 'code', 'name']);
+
+        $filename = 'provinsi.csv';
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ];
+
+        $callback = function() use ($provinces) {
+            $handle = fopen('php://output', 'w');
+            // Header
+            fputcsv($handle, ['ID', 'Kode', 'Nama Provinsi']);
+            // Data
+            foreach ($provinces as $prov) {
+                fputcsv($handle, [$prov->id, $prov->code, $prov->name]);
+            }
+            fclose($handle);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
+    public function searchAjax(Request $request)
+    {
+        $search = $request->input('search');
+        $query = Province::withCount('regencies')->orderBy('name');
+        if ($search && strlen($search) >= 2) {
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'like', "%$search%")
+                  ->orWhere('code', 'like', "%$search%");
+            });
+        }
+        $provinces = $query->paginate(10);
+        return response()->json([
+            'html' => view('wilayah.provinsi._table', compact('provinces'))->render()
+        ]);
+    }
     public function index()
     {
-        $provinces = Province::withCount('regencies')->orderBy('name')->get();
-        return view('wilayah.provinsi.index', compact('provinces'));
+        $query = Province::withCount('regencies')->orderBy('name');
+        $search = request('search');
+        if ($search) {
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'like', "%$search%")
+                  ->orWhere('code', 'like', "%$search%");
+            });
+        }
+        $provinces = $query->paginate(10)->withQueryString();
+        return view('wilayah.provinsi.index', compact('provinces', 'search'));
     }
 
     public function create()

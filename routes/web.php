@@ -225,6 +225,9 @@ Route::middleware(['auth'])->group(function () {
     // Routes untuk Wilayah - Super Admin only
     Route::middleware(['role:super_admin'])->group(function () {
         // Provinsi
+        Route::get('provinsi-search', [ProvinceController::class, 'searchAjax'])->name('provinsi.searchAjax');
+        // Route::get('provinsi-export', [ProvinceController::class, 'export'])->name('provinsi.export');
+        Route::get('provinsi-export-csv', [ProvinceController::class, 'exportCsv'])->name('provinsi.exportCsv');
         Route::resource('provinsi', ProvinceController::class)->parameters([
             'provinsi' => 'province'
         ]);
@@ -233,6 +236,9 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('provinsi/{id}/force-delete', [ProvinceController::class, 'forceDelete'])->name('provinsi.force-delete');
 
         // Kabupaten/Kota
+        Route::get('regency-search', [RegencyController::class, 'searchAjax'])->name('regency.searchAjax');
+        Route::get('regency-export-csv', [RegencyController::class, 'exportCsv'])->name('regency.exportCsv');
+        Route::get('regency-export-pdf', [RegencyController::class, 'exportPdf'])->name('regency.exportPdf');
         Route::resource('regency', RegencyController::class)->parameters([
             'regency' => 'regency'
         ]);
@@ -241,6 +247,8 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('regency/{id}/force-delete', [RegencyController::class, 'forceDelete'])->name('regency.force-delete');
 
         // Kecamatan
+        Route::get('sub-regency-export-csv', [SubRegencyController::class, 'exportCsv'])->name('sub-regency.exportCsv');
+        Route::get('sub-regency-export-pdf', [SubRegencyController::class, 'exportPdf'])->name('sub-regency.exportPdf');
         Route::resource('sub-regency', SubRegencyController::class)->parameters([
             'sub_regency' => 'subRegency'
         ]);
@@ -250,6 +258,8 @@ Route::middleware(['auth'])->group(function () {
         Route::get('regencies-by-province/{provinceId}', [SubRegencyController::class, 'getRegenciesByProvince'])->name('regencies-by-province');
 
         // Desa/Kelurahan
+        Route::get('village-export-csv', [VillageController::class, 'exportCsv'])->name('village.exportCsv');
+        Route::get('village-export-pdf', [VillageController::class, 'exportPdf'])->name('village.exportPdf');
         Route::resource('village', VillageController::class)->parameters([
             'village' => 'village'
         ]);

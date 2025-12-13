@@ -6,9 +6,17 @@
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="h3 mb-0">Manajemen Desa/Kelurahan</h1>
-        <a href="{{ route('village.create') }}" class="btn btn-primary">
-            <i class="bi bi-plus-circle"></i> Tambah Desa/Kelurahan
-        </a>
+        <div class="d-flex gap-2">
+            <a href="{{ route('village.create') }}" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> Tambah Desa/Kelurahan
+            </a>
+            <a href="{{ route('village.exportCsv', request()->all()) }}" class="btn btn-success">
+                <i class="bi bi-file-earmark-excel"></i> Export CSV
+            </a>
+            <a href="{{ route('village.exportPdf', request()->all()) }}" class="btn btn-danger">
+                <i class="bi bi-file-earmark-pdf"></i> Export PDF
+            </a>
+        </div>
     </div>
 
     @if(session('success'))
@@ -84,7 +92,7 @@
 
             @if($villages->count() > 0)
                 <div class="table-responsive">
-                    <table class="table table-striped table-hover" id="villageTable">
+                    <table class="table table-striped table-hover">
                         <thead class="table-dark">
                             <tr>
                                 <th width="4%">No</th>
@@ -101,7 +109,7 @@
                         <tbody>
                             @foreach($villages as $key => $village)
                                 <tr>
-                                    <td>{{ $key + 1 }}</td>
+                                    <td>{{ ($villages->currentPage() - 1) * $villages->perPage() + $key + 1 }}</td>
                                     <td><code>{{ $village->code }}</code></td>
                                     <td><strong>{{ $village->name }}</strong></td>
                                     <td>{{ $village->subRegency->name }}</td>
@@ -151,6 +159,9 @@
                         </tbody>
                     </table>
                 </div>
+                <div class="mt-3">
+                    {{ $villages->links() }}
+                </div>
             @else
                 <div class="alert alert-info mb-0">
                     <i class="bi bi-info-circle"></i> Tidak ada data desa/kelurahan.
@@ -164,23 +175,11 @@
 @push('scripts')
 <script>
 $(document).ready(function() {
-    // Initialize DataTable if data exists
-    @if($villages->count() > 0)
-    $('#villageTable').DataTable({
-        language: {
-            url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/id.json'
-        },
-        order: [[2, 'asc']], // Sort by name
-        pageLength: 25
-    });
-    @endif
-
     // Filter regencies by province
     $('#province_id').on('change', function() {
         const provinceId = $(this).val();
         const $regencySelect = $('#regency_id');
         const $subRegencySelect = $('#sub_regency_id');
-        
         if (provinceId) {
             $regencySelect.find('option').each(function() {
                 const $option = $(this);
@@ -192,7 +191,6 @@ $(document).ready(function() {
                     $option.hide();
                 }
             });
-            
             const selectedRegency = $regencySelect.val();
             if (selectedRegency) {
                 const selectedOption = $regencySelect.find('option[value="' + selectedRegency + '"]');
@@ -205,12 +203,10 @@ $(document).ready(function() {
             $regencySelect.find('option').show();
         }
     });
-
     // Filter sub-regencies by regency
     $('#regency_id').on('change', function() {
         const regencyId = $(this).val();
         const $subRegencySelect = $('#sub_regency_id');
-        
         if (regencyId) {
             $subRegencySelect.find('option').each(function() {
                 const $option = $(this);
@@ -222,7 +218,6 @@ $(document).ready(function() {
                     $option.hide();
                 }
             });
-            
             const selectedSubRegency = $subRegencySelect.val();
             if (selectedSubRegency) {
                 const selectedOption = $subRegencySelect.find('option[value="' + selectedSubRegency + '"]');
@@ -234,7 +229,6 @@ $(document).ready(function() {
             $subRegencySelect.find('option').show();
         }
     });
-
     // Trigger on page load if filters are selected
     if ($('#province_id').val()) {
         $('#province_id').trigger('change');

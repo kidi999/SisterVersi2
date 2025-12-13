@@ -7,7 +7,7 @@
 <div class="card">
     <div class="card-header d-flex justify-content-between align-items-center">
         <h5 class="mb-0">Daftar Provinsi</h5>
-        <div>
+        <div class="d-flex gap-2">
             @if(Auth::user()->hasRole(['super_admin']))
             <a href="{{ route('provinsi.trash') }}" class="btn btn-warning btn-sm">
                 <i class="bi bi-trash"></i> Trash
@@ -16,6 +16,14 @@
             <a href="{{ route('provinsi.create') }}" class="btn btn-primary btn-sm">
                 <i class="bi bi-plus-circle"></i> Tambah Provinsi
             </a>
+            <a href="{{ route('provinsi.exportCsv', ['search' => request('search')]) }}" class="btn btn-success btn-sm">
+                <i class="bi bi-file-earmark-excel"></i> Export CSV
+            </a>
+            <!--
+            <a href="#" class="btn btn-danger btn-sm disabled" tabindex="-1" aria-disabled="true">
+                <i class="bi bi-file-earmark-pdf"></i> Export PDF
+            </a>
+            -->
         </div>
     </div>
     <div class="card-body">
@@ -26,6 +34,51 @@
             </div>
         @endif
 
+        <div class="mb-3">
+            <div class="input-group">
+                <input type="text" name="search" id="searchInput" class="form-control" placeholder="Cari kode/nama provinsi..." value="{{ request('search') }}" autocomplete="off">
+            </div>
+        </div>
+        <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var input = document.getElementById('searchInput');
+            var tbody = document.querySelector('table tbody');
+            var pagin = document.querySelector('.mt-3');
+            var timer = null;
+            function fetchData(val, page) {
+                var url = "{{ route('provinsi.searchAjax') }}?search=" + encodeURIComponent(val || '');
+                if(page) url += "&page="+page;
+                fetch(url)
+                    .then(res => res.json())
+                    .then(data => {
+                        tbody.innerHTML = data.html;
+                        // fetch paginasi baru
+                        fetch(url+"&pagination=1").then(r=>r.text()).then(html=>{
+                            var temp = document.createElement('div');
+                            temp.innerHTML = html;
+                            var newPagin = temp.querySelector('.mt-3');
+                            if(newPagin && pagin) pagin.innerHTML = newPagin.innerHTML;
+                        });
+                    });
+            }
+            input.addEventListener('input', function() {
+                var val = input.value;
+                clearTimeout(timer);
+                if(val.length >= 2 || val.length === 0) {
+                    timer = setTimeout(function(){ fetchData(val); }, 350);
+                }
+            });
+            // handle paginasi ajax
+            document.addEventListener('click', function(e){
+                if(e.target.closest('.pagination a')){
+                    e.preventDefault();
+                    var a = e.target.closest('a');
+                    var page = a.href.split('page=')[1];
+                    fetchData(input.value, page);
+                }
+            });
+        });
+        </script>
         <div class="table-responsive">
             <table class="table table-striped table-hover">
                 <thead class="table-light">
@@ -38,40 +91,48 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse($provinces as $index => $province)
-                    <tr>
-                        <td>{{ $index + 1 }}</td>
-                        <td><span class="badge bg-primary">{{ $province->code }}</span></td>
-                        <td>{{ $province->name }}</td>
-                        <td class="text-center">
-                            <span class="badge bg-info">{{ $province->regencies_count }}</span>
-                        </td>
-                        <td class="text-center">
-                            <div class="btn-group btn-group-sm" role="group">
-                                <a href="{{ route('provinsi.show', $province) }}" class="btn btn-info" title="Detail">
-                                    <i class="bi bi-eye"></i>
-                                </a>
-                                <a href="{{ route('provinsi.edit', $province) }}" class="btn btn-warning" title="Edit">
-                                    <i class="bi bi-pencil"></i>
-                                </a>
-                                <form action="{{ route('provinsi.destroy', $province) }}" method="POST" class="d-inline" onsubmit="return confirm('Yakin ingin menghapus provinsi ini?')">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="btn btn-danger" title="Hapus">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
-                                </form>
-                            </div>
-                        </td>
-                    </tr>
-                    @empty
-                    <tr>
-                        <td colspan="5" class="text-center text-muted">Tidak ada data provinsi</td>
-                    </tr>
-                    @endforelse
+                    @include('wilayah.provinsi._table', ['provinces' => $provinces])
                 </tbody>
             </table>
         </div>
+        <div class="d-flex justify-content-center align-items-center mt-3" id="pagination-wrapper">
+            <nav aria-label="Paginasi data provinsi">
+                {{ $provinces->appends(['search' => request('search')])->links() }}
+            </nav>
+        </div>
+    @push('styles')
+    <style>
+    #pagination-wrapper nav {
+        display: flex;
+        justify-content: center;
+    }
+    .pagination {
+        margin-bottom: 0;
+        flex-wrap: wrap;
+    }
+    .pagination .page-item .page-link {
+        border-radius: 0.25rem;
+        margin: 0 2px;
+        min-width: 36px;
+        text-align: center;
+    }
+    .pagination .page-item.active .page-link {
+        background-color: #0d6efd;
+        border-color: #0d6efd;
+        color: #fff;
+    }
+    .pagination .page-item.disabled .page-link {
+        color: #6c757d;
+    }
+    @media (max-width: 576px) {
+        .pagination .page-item .page-link {
+            min-width: 28px;
+            font-size: 0.9rem;
+            padding: 0.25rem 0.5rem;
+        }
+    }
+    </style>
+    @endpush
     </div>
 </div>
 @endsection
