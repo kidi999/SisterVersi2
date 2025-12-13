@@ -10,6 +10,9 @@
             <a href="{{ route('sub-regency.create') }}" class="btn btn-primary">
                 <i class="bi bi-plus-circle"></i> Tambah Kecamatan
             </a>
+            <a href="{{ route('sub-regency.exportExcel', request()->all()) }}" class="btn btn-success">
+                <i class="bi bi-file-earmark-excel"></i> Export Excel
+            </a>
             <a href="{{ route('sub-regency.exportCsv', request()->all()) }}" class="btn btn-success">
                 <i class="bi bi-file-earmark-excel"></i> Export CSV
             </a>
@@ -78,7 +81,7 @@
             </form>
 
             <div class="table-responsive">
-                <table class="table table-striped table-hover">
+                <table class="table table-striped table-hover" id="subRegencyTable">
                     <thead class="table-dark">
                         <tr>
                             <th width="5%">No</th>
@@ -151,42 +154,7 @@ $(document).ready(function() {
     });
 
     // Trigger on page load if province is selected
-    if ($('#province_id').val()) {
-        $('#province_id').trigger('change');
-    }
-@push('scripts')
-<script>
-$(document).ready(function() {
-    // Filter regencies by province
-    $('#province_id').on('change', function() {
-        const provinceId = $(this).val();
-        const $regencySelect = $('#regency_id');
-        if (provinceId) {
-            $regencySelect.find('option').each(function() {
-                const $option = $(this);
-                if ($option.val() === '') {
-                    $option.show();
-                } else if ($option.data('province') == provinceId) {
-                    $option.show();
-                } else {
-                    $option.hide();
-                }
             });
-            const selectedRegency = $regencySelect.val();
-            if (selectedRegency) {
-                const selectedOption = $regencySelect.find('option[value="' + selectedRegency + '"]');
-                if (selectedOption.data('province') != provinceId) {
-                    $regencySelect.val('');
-                }
-            }
-        } else {
-            $regencySelect.find('option').show();
-        }
-    });
-    if ($('#province_id').val()) {
-        $('#province_id').trigger('change');
-    }
-});
 </script>
 @endpush
         }

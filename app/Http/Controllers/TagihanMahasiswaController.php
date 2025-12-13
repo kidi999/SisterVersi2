@@ -5,18 +5,20 @@ namespace App\Http\Controllers;
 use App\Models\TagihanMahasiswa;
 use App\Models\Mahasiswa;
 use App\Models\JenisPembayaran;
+use App\Models\Fakultas;
+use App\Models\ProgramStudi;
 use App\Models\TahunAkademik;
 use App\Models\Semester;
+use App\Models\FileUpload;
+use App\Support\TabularExport;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 
 class TagihanMahasiswaController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index(Request $request)
+    private function filteredQuery(Request $request)
     {
         $query = TagihanMahasiswa::with([
             'mahasiswa.programStudi.fakultas',
@@ -28,9 +30,9 @@ class TagihanMahasiswaController extends Controller
         // Filter by search
         if ($request->filled('search')) {
             $search = $request->search;
-            $query->whereHas('mahasiswa', function($q) use ($search) {
+            $query->whereHas('mahasiswa', function ($q) use ($search) {
                 $q->where('nim', 'like', "%{$search}%")
-                  ->orWhere('nama_mahasiswa', 'like', "%{$search}%");
+                    ->orWhere('nama_mahasiswa', 'like', "%{$search}%");
             })->orWhere('nomor_tagihan', 'like', "%{$search}%");
         }
 
@@ -57,22 +59,121 @@ class TagihanMahasiswaController extends Controller
         // Filter by user role
         $user = Auth::user();
         if ($user->role->name === 'admin_fakultas') {
-            $query->whereHas('mahasiswa.programStudi', function($q) use ($user) {
+            $query->whereHas('mahasiswa.programStudi', function ($q) use ($user) {
                 $q->where('fakultas_id', $user->fakultas_id);
             });
         } elseif ($user->role->name === 'admin_prodi') {
-            $query->whereHas('mahasiswa', function($q) use ($user) {
+            $query->whereHas('mahasiswa', function ($q) use ($user) {
                 $q->where('program_studi_id', $user->program_studi_id);
             });
         }
 
-        $tagihan = $query->orderBy('created_at', 'desc')->paginate(20);
+        return $query;
+    }
+
+    /**
+     * Display a listing of the resource.
+     */
+    public function index(Request $request)
+    {
+        $tagihan = $this->filteredQuery($request)
+            ->orderBy('created_at', 'desc')
+            ->paginate(20)
+            ->withQueryString();
 
         $jenisPembayaran = JenisPembayaran::active()->orderBy('urutan')->get();
         $tahunAkademik = TahunAkademik::orderBy('tahun_mulai', 'desc')->get();
         $semesters = Semester::orderBy('created_at', 'desc')->get();
 
         return view('tagihan-mahasiswa.index', compact('tagihan', 'jenisPembayaran', 'tahunAkademik', 'semesters'));
+    }
+
+    public function exportExcel(Request $request)
+    {
+        $items = $this->filteredQuery($request)->orderBy('created_at', 'desc')->get();
+
+        $headers = [
+            'No. Tagihan',
+            'NIM',
+            'Nama Mahasiswa',
+            'Program Studi',
+            'Fakultas',
+            'Jenis Pembayaran',
+            'Tahun Akademik',
+            'Semester',
+            'Tanggal Tagihan',
+            'Jatuh Tempo',
+            'Jumlah Tagihan',
+            'Jumlah Dibayar',
+            'Sisa Tagihan',
+            'Status',
+        ];
+
+        $rows = $items->map(function ($t) {
+            return [
+                $t->nomor_tagihan,
+                $t->mahasiswa->nim ?? '-',
+                $t->mahasiswa->nama_mahasiswa ?? '-',
+                $t->mahasiswa->programStudi->nama_prodi ?? '-',
+                $t->mahasiswa->programStudi->fakultas->nama_fakultas ?? '-',
+                $t->jenisPembayaran->nama ?? '-',
+                $t->tahunAkademik->nama ?? '-',
+                $t->semester->nama ?? '-',
+                optional($t->tanggal_tagihan)->format('d/m/Y'),
+                optional($t->tanggal_jatuh_tempo)->format('d/m/Y'),
+                $t->jumlah_tagihan,
+                $t->jumlah_dibayar,
+                $t->sisa_tagihan,
+                $t->status,
+            ];
+        });
+
+        $html = TabularExport::htmlTable($headers, $rows);
+        return TabularExport::excelResponse('tagihan_mahasiswa.xls', $html);
+    }
+
+    public function exportPdf(Request $request)
+    {
+        $items = $this->filteredQuery($request)->orderBy('created_at', 'desc')->get();
+
+        $headers = [
+            'No. Tagihan',
+            'NIM',
+            'Nama Mahasiswa',
+            'Program Studi',
+            'Fakultas',
+            'Jenis Pembayaran',
+            'Tahun Akademik',
+            'Semester',
+            'Tanggal Tagihan',
+            'Jatuh Tempo',
+            'Jumlah Tagihan',
+            'Jumlah Dibayar',
+            'Sisa Tagihan',
+            'Status',
+        ];
+
+        $rows = $items->map(function ($t) {
+            return [
+                $t->nomor_tagihan,
+                $t->mahasiswa->nim ?? '-',
+                $t->mahasiswa->nama_mahasiswa ?? '-',
+                $t->mahasiswa->programStudi->nama_prodi ?? '-',
+                $t->mahasiswa->programStudi->fakultas->nama_fakultas ?? '-',
+                $t->jenisPembayaran->nama ?? '-',
+                $t->tahunAkademik->nama ?? '-',
+                $t->semester->nama ?? '-',
+                optional($t->tanggal_tagihan)->format('d/m/Y'),
+                optional($t->tanggal_jatuh_tempo)->format('d/m/Y'),
+                $t->jumlah_tagihan,
+                $t->jumlah_dibayar,
+                $t->sisa_tagihan,
+                $t->status,
+            ];
+        });
+
+        $html = TabularExport::htmlTable($headers, $rows);
+        return Pdf::loadHTML($html)->download('tagihan_mahasiswa.pdf');
     }
 
     /**
@@ -118,6 +219,8 @@ class TagihanMahasiswaController extends Controller
             'denda' => 'nullable|numeric|min:0',
             'diskon' => 'nullable|numeric|min:0',
             'keterangan' => 'nullable|string',
+            'file_ids' => 'nullable|array',
+            'file_ids.*' => 'exists:file_uploads,id',
         ]);
 
         // Check duplicate tagihan
@@ -145,7 +248,16 @@ class TagihanMahasiswaController extends Controller
             $validated['status'] = 'Belum Dibayar';
             $validated['created_by'] = Auth::user()->name;
 
-            TagihanMahasiswa::create($validated);
+            $tagihan = TagihanMahasiswa::create($validated);
+
+            // Attach uploaded files (draft attachments)
+            if ($request->filled('file_ids') && is_array($request->file_ids)) {
+                FileUpload::whereIn('id', $request->file_ids)
+                    ->update([
+                        'fileable_type' => TagihanMahasiswa::class,
+                        'fileable_id' => $tagihan->id,
+                    ]);
+            }
 
             DB::commit();
             return redirect()->route('tagihan-mahasiswa.index')
@@ -167,7 +279,8 @@ class TagihanMahasiswaController extends Controller
             'jenisPembayaran',
             'tahunAkademik',
             'semester',
-            'pembayaran.verifiedBy'
+            'pembayaran.verifiedBy',
+            'files',
         ]);
 
         return view('tagihan-mahasiswa.show', compact('tagihanMahasiswa'));
@@ -178,7 +291,7 @@ class TagihanMahasiswaController extends Controller
      */
     public function edit(TagihanMahasiswa $tagihanMahasiswa)
     {
-        $tagihanMahasiswa->load('mahasiswa', 'jenisPembayaran', 'tahunAkademik', 'semester');
+        $tagihanMahasiswa->load('mahasiswa', 'jenisPembayaran', 'tahunAkademik', 'semester', 'files');
         
         $jenisPembayaran = JenisPembayaran::active()->orderBy('urutan')->get();
         $tahunAkademik = TahunAkademik::orderBy('tahun_mulai', 'desc')->get();
@@ -199,6 +312,8 @@ class TagihanMahasiswaController extends Controller
             'denda' => 'nullable|numeric|min:0',
             'diskon' => 'nullable|numeric|min:0',
             'keterangan' => 'nullable|string',
+            'file_ids' => 'nullable|array',
+            'file_ids.*' => 'exists:file_uploads,id',
         ]);
 
         DB::beginTransaction();
@@ -212,6 +327,14 @@ class TagihanMahasiswaController extends Controller
 
             $tagihanMahasiswa->update($validated);
             $tagihanMahasiswa->updateStatus();
+
+            if ($request->has('file_ids') && is_array($request->file_ids)) {
+                FileUpload::whereIn('id', $request->file_ids)
+                    ->update([
+                        'fileable_type' => TagihanMahasiswa::class,
+                        'fileable_id' => $tagihanMahasiswa->id,
+                    ]);
+            }
 
             DB::commit();
             return redirect()->route('tagihan-mahasiswa.index')
@@ -258,7 +381,10 @@ class TagihanMahasiswaController extends Controller
         $tahunAkademik = TahunAkademik::orderBy('tahun_mulai', 'desc')->get();
         $semesters = Semester::orderBy('created_at', 'desc')->get();
 
-        return view('tagihan-mahasiswa.batch-create', compact('jenisPembayaran', 'tahunAkademik', 'semesters'));
+        $fakultas = Fakultas::orderBy('nama_fakultas')->get();
+        $programStudi = ProgramStudi::with('fakultas')->orderBy('nama_prodi')->get();
+
+        return view('tagihan-mahasiswa.batch-create', compact('jenisPembayaran', 'tahunAkademik', 'semesters', 'fakultas', 'programStudi'));
     }
 
     /**

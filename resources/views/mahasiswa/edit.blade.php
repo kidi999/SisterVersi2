@@ -182,6 +182,13 @@
                 </div>
             </div>
 
+            @include('components.file-upload', [
+                'existingFiles' => $mahasiswa->files ?? collect(),
+                'fileableType' => \App\Models\Mahasiswa::class,
+                'fileableId' => $mahasiswa->id,
+                'maxFiles' => 10,
+            ])
+
             <div class="d-flex justify-content-between">
                 <a href="{{ route('mahasiswa.index') }}" class="btn btn-secondary">
                     <i class="bi bi-arrow-left"></i> Kembali

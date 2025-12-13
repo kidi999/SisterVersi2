@@ -6,9 +6,17 @@
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2>Daftar User</h2>
-        <a href="{{ route('users.create') }}" class="btn btn-primary">
-            <i class="bi bi-plus-circle me-2"></i>Tambah User
-        </a>
+        <div>
+            <a href="{{ route('users.exportExcel', request()->query()) }}" class="btn btn-success me-2">
+                <i class="bi bi-file-earmark-excel me-2"></i>Export Excel
+            </a>
+            <a href="{{ route('users.exportPdf', request()->query()) }}" class="btn btn-danger me-2">
+                <i class="bi bi-file-earmark-pdf me-2"></i>Export PDF
+            </a>
+            <a href="{{ route('users.create') }}" class="btn btn-primary">
+                <i class="bi bi-plus-circle me-2"></i>Tambah User
+            </a>
+        </div>
     </div>
 
     @if(session('success'))
@@ -44,7 +52,7 @@
                     <tbody>
                         @forelse($users as $index => $user)
                             <tr>
-                                <td>{{ $index + 1 }}</td>
+                                <td>{{ ($users->firstItem() ?? 0) + $index }}</td>
                                 <td>
                                     <a href="{{ route('users.show', $user->id) }}" class="text-decoration-none">
                                         {{ $user->name }}
@@ -105,73 +113,85 @@
                     </tbody>
                 </table>
             </div>
+
+            <div class="d-flex justify-content-between align-items-center mt-3">
+                <div>
+                    Menampilkan {{ $users->firstItem() ?? 0 }} sampai {{ $users->lastItem() ?? 0 }} dari {{ $users->total() }} data
+                </div>
+                <div>
+                    {{ $users->links() }}
+                </div>
+            </div>
         </div>
     </div>
 </div>
-
-@push('styles')
-<link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
-@endpush
-
 @push('scripts')
-<script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
 <script>
-    $(document).ready(function() {
-        // DataTable
-        $('#userTable').DataTable({
-            language: {
-                url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/id.json',
-            }
-        });
+    document.addEventListener('DOMContentLoaded', () => {
+        const csrfToken = '{{ csrf_token() }}';
 
         // Delete confirmation
-        $('.delete-form').on('submit', function(e) {
-            e.preventDefault();
-            if (confirm('Apakah Anda yakin ingin menghapus user ini?')) {
-                this.submit();
-            }
+        document.querySelectorAll('.delete-form').forEach((form) => {
+            form.addEventListener('submit', (e) => {
+                if (!confirm('Apakah Anda yakin ingin menghapus user ini?')) {
+                    e.preventDefault();
+                }
+            });
         });
 
         // Toggle active status
-        $('.toggle-active').on('change', function() {
-            const userId = $(this).data('user-id');
-            const checkbox = $(this);
-            const label = checkbox.next('label');
-            
-            $.ajax({
-                url: `/users/${userId}/toggle-active`,
-                type: 'POST',
-                data: {
-                    _token: '{{ csrf_token() }}'
-                },
-                success: function(response) {
-                    if (response.success) {
-                        label.text(response.is_active ? 'Aktif' : 'Nonaktif');
-                        const alertType = response.is_active ? 'success' : 'warning';
-                        showAlert(response.message, alertType);
+        document.querySelectorAll('.toggle-active').forEach((checkbox) => {
+            checkbox.addEventListener('change', async () => {
+                const userId = checkbox.getAttribute('data-user-id');
+                const label = checkbox.parentElement.querySelector('label');
+                const previousValue = !checkbox.checked;
+
+                try {
+                    const response = await fetch(`/users/${userId}/toggle-active`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': csrfToken,
+                            'Accept': 'application/json',
+                        },
+                        body: JSON.stringify({})
+                    });
+
+                    const data = await response.json();
+
+                    if (!response.ok) {
+                        checkbox.checked = previousValue;
+                        showAlert(data?.error || 'Terjadi kesalahan', 'danger');
+                        return;
                     }
-                },
-                error: function(xhr) {
-                    checkbox.prop('checked', !checkbox.prop('checked'));
-                    const error = xhr.responseJSON?.error || 'Terjadi kesalahan';
-                    showAlert(error, 'danger');
+
+                    if (data.success) {
+                        if (label) label.textContent = data.is_active ? 'Aktif' : 'Nonaktif';
+                        showAlert(data.message, data.is_active ? 'success' : 'warning');
+                    }
+                } catch (e) {
+                    checkbox.checked = previousValue;
+                    showAlert('Terjadi kesalahan', 'danger');
                 }
             });
         });
 
         function showAlert(message, type) {
-            const alert = `
+            const wrapper = document.createElement('div');
+            wrapper.innerHTML = `
                 <div class="alert alert-${type} alert-dismissible fade show" role="alert">
                     ${message}
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
             `;
-            $('.container-fluid').prepend(alert);
+            const container = document.querySelector('.container-fluid');
+            container?.prepend(wrapper.firstElementChild);
+
             setTimeout(() => {
-                $('.alert').fadeOut('slow', function() {
-                    $(this).remove();
-                });
+                const alert = container?.querySelector('.alert');
+                alert?.classList.remove('show');
+                alert?.classList.add('fade');
+                setTimeout(() => alert?.remove(), 300);
             }, 3000);
         }
     });

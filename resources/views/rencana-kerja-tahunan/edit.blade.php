@@ -99,6 +99,13 @@
                             </div>
                         </div>
 
+                        @include('components.file-upload', [
+                            'existingFiles' => $rkt->files ?? collect(),
+                            'fileableType' => \App\Models\RencanaKerjaTahunan::class,
+                            'fileableId' => $rkt->id,
+                            'maxFiles' => 10,
+                        ])
+
                         <div class="d-flex justify-content-between mt-4">
                             <a href="{{ route('rencana-kerja-tahunan.show', $rkt->id) }}" class="btn btn-secondary">
                                 <i class="bi bi-arrow-left me-1"></i>Kembali

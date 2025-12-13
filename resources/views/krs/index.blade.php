@@ -4,11 +4,19 @@
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="h3 mb-0">KRS (Kartu Rencana Studi)</h1>
-        @if(Auth::user()->role->name == 'mahasiswa')
-        <a href="{{ route('krs.create') }}" class="btn btn-primary">
-            <i class="bi bi-plus-circle"></i> Isi KRS
-        </a>
-        @endif
+        <div>
+            <a href="{{ route('krs.exportExcel', request()->query()) }}" class="btn btn-success me-2">
+                <i class="bi bi-file-earmark-excel"></i> Export Excel
+            </a>
+            <a href="{{ route('krs.exportPdf', request()->query()) }}" class="btn btn-danger me-2">
+                <i class="bi bi-file-earmark-pdf"></i> Export PDF
+            </a>
+            @if(Auth::user()->role->name == 'mahasiswa')
+            <a href="{{ route('krs.create') }}" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> Isi KRS
+            </a>
+            @endif
+        </div>
     </div>
 
     @if(session('success'))

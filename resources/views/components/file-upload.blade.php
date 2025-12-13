@@ -40,6 +40,7 @@ $(document).ready(function() {
     let uploadedFiles = [];
     const maxFileSize = 3 * 1024 * 1024; // 3MB in bytes
     const maxFiles = {{ $maxFiles ?? 10 }};
+    const canDelete = {!! json_encode(auth()->check()) !!};
     const fileableType = {!! json_encode($fileableType ?? 'App\\Models\\TahunAkademik') !!};
     const fileableId = {{ $fileableId ?? 'null' }};
     
@@ -113,6 +114,12 @@ $(document).ready(function() {
     }
 
     function addFileToList(file) {
+        const deleteButtonHtml = canDelete
+            ? `<button type="button" class="btn btn-sm btn-danger" onclick="removeFile(${file.id})">
+                    <i class="bi bi-trash"></i>
+               </button>`
+            : '';
+
         const fileHtml = `
             <div class="col-md-6" id="file-${file.id}">
                 <div class="card">
@@ -127,9 +134,7 @@ $(document).ready(function() {
                                     <small class="text-muted">${file.size}</small>
                                 </div>
                             </div>
-                            <button type="button" class="btn btn-sm btn-danger" onclick="removeFile(${file.id})">
-                                <i class="bi bi-trash"></i>
-                            </button>
+                            ${deleteButtonHtml}
                         </div>
                     </div>
                 </div>
@@ -139,6 +144,7 @@ $(document).ready(function() {
     }
 
     window.removeFile = function(fileId) {
+        if (!canDelete) return;
         if (!confirm('Hapus file ini?')) return;
 
         $.ajax({

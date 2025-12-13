@@ -111,6 +111,13 @@
                             <small class="text-muted">Hanya ruangan yang tersedia pada waktu tersebut yang akan ditampilkan</small>
                         </div>
 
+                        <div class="mb-3">
+                            @include('components.file-upload', [
+                                'existingFiles' => collect(),
+                                'fileableType' => \App\Models\JadwalKuliah::class,
+                            ])
+                        </div>
+
                         <div class="d-flex gap-2">
                             <button type="submit" class="btn btn-primary">
                                 <i class="bi bi-save"></i> Simpan

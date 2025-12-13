@@ -8,16 +8,15 @@ use App\Models\ProgramStudi;
 use App\Models\Fakultas;
 use App\Models\Province;
 use App\Models\FileUpload;
+use App\Support\TabularExport;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 
 class PendaftaranMahasiswaController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index(Request $request)
+    private function filteredQuery(Request $request)
     {
         $query = PendaftaranMahasiswa::with(['programStudi.fakultas', 'village']);
 
@@ -43,7 +42,7 @@ class PendaftaranMahasiswaController extends Controller
 
         // Filter berdasarkan fakultas
         if ($request->filled('fakultas_id')) {
-            $query->whereHas('programStudi', function($q) use ($request) {
+            $query->whereHas('programStudi', function ($q) use ($request) {
                 $q->where('fakultas_id', $request->fakultas_id);
             });
         }
@@ -51,19 +50,110 @@ class PendaftaranMahasiswaController extends Controller
         // Search
         if ($request->filled('search')) {
             $search = $request->search;
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('no_pendaftaran', 'like', "%{$search}%")
-                  ->orWhere('nama_lengkap', 'like', "%{$search}%")
-                  ->orWhere('email', 'like', "%{$search}%")
-                  ->orWhere('nik', 'like', "%{$search}%");
+                    ->orWhere('nama_lengkap', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('nik', 'like', "%{$search}%");
             });
         }
 
-        $pendaftaran = $query->latest('tanggal_daftar')->paginate(20);
+        return $query;
+    }
+
+    /**
+     * Display a listing of the resource.
+     */
+    public function index(Request $request)
+    {
+        $pendaftaran = $this->filteredQuery($request)
+            ->latest('tanggal_daftar')
+            ->paginate(20)
+            ->withQueryString();
         $fakultas = Fakultas::all();
         $programStudi = ProgramStudi::all();
 
         return view('pendaftaran-mahasiswa.index', compact('pendaftaran', 'fakultas', 'programStudi'));
+    }
+
+    public function exportExcel(Request $request)
+    {
+        $items = $this->filteredQuery($request)
+            ->latest('tanggal_daftar')
+            ->get();
+
+        $headers = [
+            'No. Pendaftaran',
+            'Tanggal Daftar',
+            'Tahun Akademik',
+            'Nama Lengkap',
+            'Email',
+            'NIK',
+            'Jenis Kelamin',
+            'Jalur Masuk',
+            'Program Studi',
+            'Fakultas',
+            'Status',
+        ];
+
+        $rows = $items->map(function ($item) {
+            return [
+                $item->no_pendaftaran,
+                optional($item->tanggal_daftar)->format('d/m/Y H:i'),
+                $item->tahun_akademik,
+                $item->nama_lengkap,
+                $item->email,
+                $item->nik,
+                $item->jenis_kelamin,
+                $item->jalur_masuk,
+                $item->programStudi->nama_prodi ?? '-',
+                $item->programStudi->fakultas->nama_fakultas ?? '-',
+                $item->status,
+            ];
+        });
+
+        $html = TabularExport::htmlTable($headers, $rows);
+        return TabularExport::excelResponse('pendaftaran_mahasiswa.xls', $html);
+    }
+
+    public function exportPdf(Request $request)
+    {
+        $items = $this->filteredQuery($request)
+            ->latest('tanggal_daftar')
+            ->get();
+
+        $headers = [
+            'No. Pendaftaran',
+            'Tanggal Daftar',
+            'Tahun Akademik',
+            'Nama Lengkap',
+            'Email',
+            'NIK',
+            'Jenis Kelamin',
+            'Jalur Masuk',
+            'Program Studi',
+            'Fakultas',
+            'Status',
+        ];
+
+        $rows = $items->map(function ($item) {
+            return [
+                $item->no_pendaftaran,
+                optional($item->tanggal_daftar)->format('d/m/Y H:i'),
+                $item->tahun_akademik,
+                $item->nama_lengkap,
+                $item->email,
+                $item->nik,
+                $item->jenis_kelamin,
+                $item->jalur_masuk,
+                $item->programStudi->nama_prodi ?? '-',
+                $item->programStudi->fakultas->nama_fakultas ?? '-',
+                $item->status,
+            ];
+        });
+
+        $html = TabularExport::htmlTable($headers, $rows);
+        return Pdf::loadHTML($html)->download('pendaftaran_mahasiswa.pdf');
     }
 
     /**

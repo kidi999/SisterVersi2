@@ -9,15 +9,14 @@ use App\Models\Regency;
 use App\Models\SubRegency;
 use App\Models\Village;
 use App\Models\FileUpload;
+use App\Support\TabularExport;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
 class UniversityController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index(Request $request)
+    private function filteredQuery(Request $request)
     {
         $query = University::with('village.subRegency.regency.province');
 
@@ -37,14 +36,119 @@ class UniversityController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('nama', 'like', "%{$search}%")
-                  ->orWhere('kode', 'like', "%{$search}%")
-                  ->orWhere('singkatan', 'like', "%{$search}%");
+                    ->orWhere('kode', 'like', "%{$search}%")
+                    ->orWhere('singkatan', 'like', "%{$search}%");
             });
         }
 
-        $universities = $query->orderBy('nama')->paginate(10);
+        return $query;
+    }
+
+    /**
+     * Display a listing of the resource.
+     */
+    public function index(Request $request)
+    {
+        $universities = $this->filteredQuery($request)
+            ->orderBy('nama')
+            ->paginate(10)
+            ->withQueryString();
 
         return view('university.index', compact('universities'));
+    }
+
+    public function exportExcel(Request $request)
+    {
+        $items = $this->filteredQuery($request)->orderBy('nama')->get();
+
+        $headers = [
+            'Kode',
+            'Nama',
+            'Singkatan',
+            'Jenis',
+            'Status',
+            'Akreditasi',
+            'Email',
+            'Telepon',
+            'Website',
+            'Provinsi',
+            'Kab/Kota',
+            'Kecamatan',
+            'Desa/Kelurahan',
+        ];
+
+        $rows = $items->map(function ($u) {
+            $province = $u->village?->subRegency?->regency?->province?->name;
+            $regency = $u->village?->subRegency?->regency?->name;
+            $subRegency = $u->village?->subRegency?->name;
+            $village = $u->village?->name;
+
+            return [
+                $u->kode,
+                $u->nama,
+                $u->singkatan,
+                $u->jenis,
+                $u->status,
+                $u->akreditasi,
+                $u->email,
+                $u->telepon,
+                $u->website,
+                $province ?? '-',
+                $regency ?? '-',
+                $subRegency ?? '-',
+                $village ?? '-',
+            ];
+        });
+
+        $html = TabularExport::htmlTable($headers, $rows);
+        return TabularExport::excelResponse('universities.xls', $html);
+    }
+
+    public function exportPdf(Request $request)
+    {
+        $items = $this->filteredQuery($request)->orderBy('nama')->get();
+
+        $headers = [
+            'Kode',
+            'Nama',
+            'Singkatan',
+            'Jenis',
+            'Status',
+            'Akreditasi',
+            'Email',
+            'Telepon',
+            'Website',
+            'Provinsi',
+            'Kab/Kota',
+            'Kecamatan',
+            'Desa/Kelurahan',
+        ];
+
+        $rows = $items->map(function ($u) {
+            $province = $u->village?->subRegency?->regency?->province?->name;
+            $regency = $u->village?->subRegency?->regency?->name;
+            $subRegency = $u->village?->subRegency?->name;
+            $village = $u->village?->name;
+
+            return [
+                $u->kode,
+                $u->nama,
+                $u->singkatan,
+                $u->jenis,
+                $u->status,
+                $u->akreditasi,
+                $u->email,
+                $u->telepon,
+                $u->website,
+                $province ?? '-',
+                $regency ?? '-',
+                $subRegency ?? '-',
+                $village ?? '-',
+            ];
+        });
+
+        $html = TabularExport::htmlTable($headers, $rows);
+        return Pdf::loadHTML($html)->download('universities.pdf');
     }
 
     /**

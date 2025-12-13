@@ -13,132 +13,138 @@ class RegionSeeder extends Seeder
     public function run(): void
     {
         // Provinsi DKI Jakarta
-        $jakarta = Province::create([
-            'code' => '31',
-            'name' => 'DKI Jakarta',
-            'created_by' => 'System',
-            'created_at' => now()
-        ]);
+        $jakarta = Province::firstOrCreate(
+            ['code' => '31'],
+            ['name' => 'DKI Jakarta', 'created_by' => 'System']
+        );
 
-        $jaksel = Regency::create([
-            'province_id' => $jakarta->id,
-            'code' => '3174',
-            'name' => 'Jakarta Selatan',
-            'type' => 'Kota',
-            'created_by' => 'System',
-            'created_at' => now()
-        ]);
+        $jaksel = Regency::firstOrCreate(
+            ['code' => '3174'],
+            [
+                'province_id' => $jakarta->id,
+                'name' => 'Jakarta Selatan',
+                'type' => 'Kota',
+                'created_by' => 'System',
+            ]
+        );
 
-        $kebayoran = SubRegency::create([
-            'regency_id' => $jaksel->id,
-            'code' => '317401',
-            'name' => 'Kebayoran Baru',
-            'created_by' => 'System',
-            'created_at' => now()
-        ]);
+        $kebayoran = SubRegency::firstOrCreate(
+            ['code' => '317401'],
+            [
+                'regency_id' => $jaksel->id,
+                'name' => 'Kebayoran Baru',
+                'created_by' => 'System',
+            ]
+        );
 
-        Village::create([
-            'sub_regency_id' => $kebayoran->id,
-            'code' => '31740101',
-            'name' => 'Gunung',
-            'postal_code' => '12120',
-            'created_by' => 'System',
-            'created_at' => now()
-        ]);
+        Village::firstOrCreate(
+            ['code' => '31740101'],
+            [
+                'sub_regency_id' => $kebayoran->id,
+                'name' => 'Gunung',
+                'postal_code' => '12120',
+                'created_by' => 'System',
+            ]
+        );
 
-        Village::create([
-            'sub_regency_id' => $kebayoran->id,
-            'code' => '31740102',
-            'name' => 'Kramat Pela',
-            'postal_code' => '12130',
-            'created_by' => 'System',
-            'created_at' => now()
-        ]);
+        Village::firstOrCreate(
+            ['code' => '31740102'],
+            [
+                'sub_regency_id' => $kebayoran->id,
+                'name' => 'Kramat Pela',
+                'postal_code' => '12130',
+                'created_by' => 'System',
+            ]
+        );
 
         // Provinsi Jawa Barat
-        $jabar = Province::create([
-            'code' => '32',
-            'name' => 'Jawa Barat',
-            'created_by' => 'System',
-            'created_at' => now()
-        ]);
+        $jabar = Province::firstOrCreate(
+            ['code' => '32'],
+            ['name' => 'Jawa Barat', 'created_by' => 'System']
+        );
 
-        $bandung = Regency::create([
-            'province_id' => $jabar->id,
-            'code' => '3273',
-            'name' => 'Bandung',
-            'type' => 'Kota',
-            'created_by' => 'System',
-            'created_at' => now()
-        ]);
+        $bandung = Regency::firstOrCreate(
+            ['code' => '3273'],
+            [
+                'province_id' => $jabar->id,
+                'name' => 'Bandung',
+                'type' => 'Kota',
+                'created_by' => 'System',
+            ]
+        );
 
-        $coblong = SubRegency::create([
-            'regency_id' => $bandung->id,
-            'code' => '327301',
-            'name' => 'Coblong',
-            'created_by' => 'System',
-            'created_at' => now()
-        ]);
+        $coblong = SubRegency::firstOrCreate(
+            ['code' => '327301'],
+            [
+                'regency_id' => $bandung->id,
+                'name' => 'Coblong',
+                'created_by' => 'System',
+            ]
+        );
 
-        Village::create([
-            'sub_regency_id' => $coblong->id,
-            'code' => '32730101',
-            'name' => 'Cipaganti',
-            'postal_code' => '40131',
-            'created_by' => 'System',
-            'created_at' => now()
-        ]);
+        Village::firstOrCreate(
+            ['code' => '32730101'],
+            [
+                'sub_regency_id' => $coblong->id,
+                'name' => 'Cipaganti',
+                'postal_code' => '40131',
+                'created_by' => 'System',
+            ]
+        );
 
-        Village::create([
-            'sub_regency_id' => $coblong->id,
-            'code' => '32730102',
-            'name' => 'Dago',
-            'postal_code' => '40135',
-            'created_by' => 'System',
-            'created_at' => now()
-        ]);
+        Village::firstOrCreate(
+            ['code' => '32730102'],
+            [
+                'sub_regency_id' => $coblong->id,
+                'name' => 'Dago',
+                'postal_code' => '40135',
+                'created_by' => 'System',
+            ]
+        );
 
         // Provinsi Jawa Tengah
-        $jateng = Province::create([
-            'code' => '33',
-            'name' => 'Jawa Tengah',
-            'created_by' => 'System',
-            'created_at' => now()
-        ]);
+        $jateng = Province::firstOrCreate(
+            ['code' => '33'],
+            ['name' => 'Jawa Tengah', 'created_by' => 'System']
+        );
 
-        $semarang = Regency::create([
-            'province_id' => $jateng->id,
-            'code' => '3374',
-            'name' => 'Semarang',
-            'type' => 'Kota',
-            'created_by' => 'System',
-            'created_at' => now()
-        ]);
+        $semarang = Regency::firstOrCreate(
+            ['code' => '3374'],
+            [
+                'province_id' => $jateng->id,
+                'name' => 'Semarang',
+                'type' => 'Kota',
+                'created_by' => 'System',
+            ]
+        );
 
-        $tembalang = SubRegency::create([
-            'regency_id' => $semarang->id,
-            'code' => '337401',
-            'name' => 'Tembalang',
-            'created_by' => 'System',
-            'created_at' => now()
-        ]);
+        $tembalang = SubRegency::firstOrCreate(
+            ['code' => '337401'],
+            [
+                'regency_id' => $semarang->id,
+                'name' => 'Tembalang',
+                'created_by' => 'System',
+            ]
+        );
 
-        Village::create([
-            'sub_regency_id' => $tembalang->id,
-            'code' => '33740101',
-            'name' => 'Tembalang',
-            'postal_code' => '50275',
-            'created_by' => 'System',
-            'created_at' => now()
-        ]);
+        Village::firstOrCreate(
+            ['code' => '33740101'],
+            [
+                'sub_regency_id' => $tembalang->id,
+                'name' => 'Tembalang',
+                'postal_code' => '50275',
+                'created_by' => 'System',
+            ]
+        );
 
-        Village::create([
-            'sub_regency_id' => $tembalang->id,
-            'code' => '33740102',
-            'name' => 'Bulusan',
-            'postal_code' => '50277',
-            'created_by' => 'System',
-            'created_at' => now()
-        ]);
+        Village::firstOrCreate(
+            ['code' => '33740102'],
+            [
+                'sub_regency_id' => $tembalang->id,
+                'name' => 'Bulusan',
+                'postal_code' => '50277',
+                'created_by' => 'System',
+            ]
+        );
     }
 }

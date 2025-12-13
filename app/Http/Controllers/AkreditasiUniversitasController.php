@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\AkreditasiUniversitas;
 use App\Models\University;
 use App\Models\FileUpload;
+use App\Support\TabularExport;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -49,10 +51,120 @@ class AkreditasiUniversitasController extends Controller
             });
         }
 
-        $akreditasi = $query->orderBy('tanggal_sk', 'desc')->paginate(10);
+        $akreditasi = $query->orderBy('tanggal_sk', 'desc')->paginate(10)->withQueryString();
         $universities = University::orderBy('nama')->get();
 
         return view('akreditasi-universitas.index', compact('akreditasi', 'universities'));
+    }
+
+    public function exportExcel(Request $request)
+    {
+        $query = AkreditasiUniversitas::with('university', 'files');
+
+        if ($request->filled('university_id')) {
+            $query->where('university_id', $request->university_id);
+        }
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->filled('peringkat')) {
+            $query->where('peringkat', $request->peringkat);
+        }
+
+        if ($request->filled('tahun')) {
+            $query->where('tahun_akreditasi', $request->tahun);
+        }
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('nomor_sk', 'like', "%{$search}%")
+                    ->orWhere('lembaga_akreditasi', 'like', "%{$search}%")
+                    ->orWhereHas('university', function ($q) use ($search) {
+                        $q->where('nama', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        $items = $query->orderBy('tanggal_sk', 'desc')->get();
+
+        $rows = $items->map(function (AkreditasiUniversitas $item, int $index) {
+            return [
+                $index + 1,
+                $item->university->nama ?? '-',
+                $item->lembaga_akreditasi,
+                $item->nomor_sk,
+                $item->tanggal_sk,
+                (string) $item->tahun_akreditasi,
+                $item->peringkat,
+                $item->status,
+                (string) $item->files->count(),
+            ];
+        });
+
+        $html = TabularExport::htmlTable(
+            ['No', 'Universitas', 'Lembaga', 'No SK', 'Tanggal SK', 'Tahun', 'Peringkat', 'Status', 'Lampiran'],
+            $rows
+        );
+
+        return TabularExport::excelResponse('akreditasi-universitas.xls', $html);
+    }
+
+    public function exportPdf(Request $request)
+    {
+        $query = AkreditasiUniversitas::with('university', 'files');
+
+        if ($request->filled('university_id')) {
+            $query->where('university_id', $request->university_id);
+        }
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->filled('peringkat')) {
+            $query->where('peringkat', $request->peringkat);
+        }
+
+        if ($request->filled('tahun')) {
+            $query->where('tahun_akreditasi', $request->tahun);
+        }
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('nomor_sk', 'like', "%{$search}%")
+                    ->orWhere('lembaga_akreditasi', 'like', "%{$search}%")
+                    ->orWhereHas('university', function ($q) use ($search) {
+                        $q->where('nama', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        $items = $query->orderBy('tanggal_sk', 'desc')->get();
+
+        $rows = $items->map(function (AkreditasiUniversitas $item, int $index) {
+            return [
+                $index + 1,
+                $item->university->nama ?? '-',
+                $item->lembaga_akreditasi,
+                $item->nomor_sk,
+                $item->tanggal_sk,
+                (string) $item->tahun_akreditasi,
+                $item->peringkat,
+                $item->status,
+                (string) $item->files->count(),
+            ];
+        });
+
+        $html = TabularExport::htmlTable(
+            ['No', 'Universitas', 'Lembaga', 'No SK', 'Tanggal SK', 'Tahun', 'Peringkat', 'Status', 'Lampiran'],
+            $rows
+        );
+
+        return Pdf::loadHTML($html)->download('akreditasi-universitas.pdf');
     }
 
     /**

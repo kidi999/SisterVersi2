@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use App\Traits\AuditableTrait;
 
 class PembayaranMahasiswa extends Model
@@ -64,6 +65,11 @@ class PembayaranMahasiswa extends Model
     public function verifiedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'verified_by');
+    }
+
+    public function files(): MorphMany
+    {
+        return $this->morphMany(FileUpload::class, 'fileable')->orderBy('order');
     }
 
     /**

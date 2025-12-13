@@ -7,13 +7,16 @@ use App\Models\RencanaKerjaTahunan;
 use App\Models\University;
 use App\Models\Fakultas;
 use App\Models\ProgramStudi;
+use App\Models\FileUpload;
+use App\Support\TabularExport;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class RencanaKerjaTahunanController extends Controller
 {
-    public function index(Request $request)
+    private function filteredQuery(Request $request)
     {
         $user = Auth::user();
         $query = RencanaKerjaTahunan::with(['university', 'fakultas', 'programStudi', 'disetujuiOleh']);
@@ -36,17 +39,116 @@ class RencanaKerjaTahunanController extends Controller
             $query->where('status', $request->status);
         }
         if ($request->filled('search')) {
-            $query->where(function($q) use ($request) {
+            $query->where(function ($q) use ($request) {
                 $q->where('kode_rkt', 'like', '%' . $request->search . '%')
-                  ->orWhere('judul_rkt', 'like', '%' . $request->search . '%');
+                    ->orWhere('judul_rkt', 'like', '%' . $request->search . '%');
             });
         }
 
-        $rkt = $query->orderBy('tahun', 'desc')
-                     ->orderBy('created_at', 'desc')
-                     ->paginate(15);
+        return $query;
+    }
+
+    public function index(Request $request)
+    {
+        $rkt = $this->filteredQuery($request)
+            ->orderBy('tahun', 'desc')
+            ->orderBy('created_at', 'desc')
+            ->paginate(15)
+            ->withQueryString();
 
         return view('rencana-kerja-tahunan.index', compact('rkt'));
+    }
+
+    public function exportExcel(Request $request)
+    {
+        $items = $this->filteredQuery($request)
+            ->orderBy('tahun', 'desc')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        $headers = [
+            'Kode RKT',
+            'Judul',
+            'Tahun',
+            'Level',
+            'Unit',
+            'Tanggal Mulai',
+            'Tanggal Selesai',
+            'Anggaran',
+            'Status',
+        ];
+
+        $rows = $items->map(function ($item) {
+            $unit = '-';
+            if ($item->level === 'Universitas') {
+                $unit = $item->university->nama ?? '-';
+            } elseif ($item->level === 'Fakultas') {
+                $unit = $item->fakultas->nama_fakultas ?? '-';
+            } elseif ($item->level === 'Prodi') {
+                $unit = $item->programStudi->nama_prodi ?? '-';
+            }
+
+            return [
+                $item->kode_rkt,
+                $item->judul_rkt,
+                $item->tahun,
+                $item->level,
+                $unit,
+                optional($item->tanggal_mulai)->format('d/m/Y'),
+                optional($item->tanggal_selesai)->format('d/m/Y'),
+                $item->anggaran,
+                $item->status,
+            ];
+        });
+
+        $html = TabularExport::htmlTable($headers, $rows);
+        return TabularExport::excelResponse('rencana_kerja_tahunan.xls', $html);
+    }
+
+    public function exportPdf(Request $request)
+    {
+        $items = $this->filteredQuery($request)
+            ->orderBy('tahun', 'desc')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        $headers = [
+            'Kode RKT',
+            'Judul',
+            'Tahun',
+            'Level',
+            'Unit',
+            'Tanggal Mulai',
+            'Tanggal Selesai',
+            'Anggaran',
+            'Status',
+        ];
+
+        $rows = $items->map(function ($item) {
+            $unit = '-';
+            if ($item->level === 'Universitas') {
+                $unit = $item->university->nama ?? '-';
+            } elseif ($item->level === 'Fakultas') {
+                $unit = $item->fakultas->nama_fakultas ?? '-';
+            } elseif ($item->level === 'Prodi') {
+                $unit = $item->programStudi->nama_prodi ?? '-';
+            }
+
+            return [
+                $item->kode_rkt,
+                $item->judul_rkt,
+                $item->tahun,
+                $item->level,
+                $unit,
+                optional($item->tanggal_mulai)->format('d/m/Y'),
+                optional($item->tanggal_selesai)->format('d/m/Y'),
+                $item->anggaran,
+                $item->status,
+            ];
+        });
+
+        $html = TabularExport::htmlTable($headers, $rows);
+        return Pdf::loadHTML($html)->download('rencana_kerja_tahunan.pdf');
     }
 
     public function create()
@@ -72,6 +174,8 @@ class RencanaKerjaTahunanController extends Controller
             'tanggal_mulai' => 'required|date',
             'tanggal_selesai' => 'required|date|after:tanggal_mulai',
             'anggaran' => 'nullable|numeric|min:0',
+            'file_ids' => 'nullable|array',
+            'file_ids.*' => 'exists:file_uploads,id',
         ]);
 
         DB::beginTransaction();
@@ -80,6 +184,18 @@ class RencanaKerjaTahunanController extends Controller
             $rkt->kode_rkt = $rkt->generateKodeRkt();
             $rkt->status = RencanaKerjaTahunan::STATUS_DRAFT;
             $rkt->save();
+
+            if ($request->filled('file_ids') && is_array($request->file_ids)) {
+                FileUpload::whereIn('id', $request->file_ids)
+                    ->where(function ($query) {
+                        $query->whereNull('fileable_id')
+                            ->orWhere('fileable_id', 0);
+                    })
+                    ->update([
+                        'fileable_id' => $rkt->id,
+                        'fileable_type' => RencanaKerjaTahunan::class,
+                    ]);
+            }
 
             DB::commit();
             return redirect()->route('rencana-kerja-tahunan.show', $rkt->id)
@@ -92,7 +208,7 @@ class RencanaKerjaTahunanController extends Controller
 
     public function show($id)
     {
-        $rkt = RencanaKerjaTahunan::with(['programRkt.kegiatanRkt.pencapaianRkt', 'university', 'fakultas', 'programStudi'])
+        $rkt = RencanaKerjaTahunan::with(['programRkt.kegiatanRkt.pencapaianRkt', 'university', 'fakultas', 'programStudi', 'files'])
                                   ->findOrFail($id);
 
         return view('rencana-kerja-tahunan.show', compact('rkt'));
@@ -100,7 +216,7 @@ class RencanaKerjaTahunanController extends Controller
 
     public function edit($id)
     {
-        $rkt = RencanaKerjaTahunan::findOrFail($id);
+        $rkt = RencanaKerjaTahunan::with('files')->findOrFail($id);
 
         if (!$rkt->canEdit()) {
             return back()->with('error', 'RKT tidak dapat diedit karena sudah dalam proses atau disetujui');
@@ -127,9 +243,27 @@ class RencanaKerjaTahunanController extends Controller
             'tanggal_mulai' => 'required|date',
             'tanggal_selesai' => 'required|date|after:tanggal_mulai',
             'anggaran' => 'nullable|numeric|min:0',
+            'file_ids' => 'nullable|array',
+            'file_ids.*' => 'exists:file_uploads,id',
         ]);
 
         $rkt->update($validated);
+
+        if ($request->has('file_ids') && is_array($request->file_ids)) {
+            FileUpload::whereIn('id', $request->file_ids)
+                ->where(function ($query) use ($rkt) {
+                    $query->whereNull('fileable_id')
+                        ->orWhere('fileable_id', 0)
+                        ->orWhere(function ($q) use ($rkt) {
+                            $q->where('fileable_type', RencanaKerjaTahunan::class)
+                                ->where('fileable_id', $rkt->id);
+                        });
+                })
+                ->update([
+                    'fileable_id' => $rkt->id,
+                    'fileable_type' => RencanaKerjaTahunan::class,
+                ]);
+        }
 
         return redirect()->route('rencana-kerja-tahunan.show', $rkt->id)
                        ->with('success', 'RKT berhasil diperbarui');

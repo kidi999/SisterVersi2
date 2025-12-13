@@ -10,16 +10,16 @@ use App\Models\TahunAkademik;
 use App\Models\Semester;
 use App\Models\ProgramStudi;
 use App\Models\Fakultas;
+use App\Models\FileUpload;
+use App\Support\TabularExport;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 
 class JadwalKuliahController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index(Request $request)
+    protected function buildIndexQuery(Request $request)
     {
         $query = JadwalKuliah::with([
             'kelas.mataKuliah.fakultas',
@@ -93,7 +93,19 @@ class JadwalKuliahController extends Controller
             });
         }
 
-        $jadwal = $query->orderBy('hari')->orderBy('jam_mulai')->paginate(20);
+        return $query;
+    }
+
+    /**
+     * Display a listing of the resource.
+     */
+    public function index(Request $request)
+    {
+        $jadwal = $this->buildIndexQuery($request)
+            ->orderBy('hari')
+            ->orderBy('jam_mulai')
+            ->paginate(20)
+            ->withQueryString();
 
         // Data for filters
         $tahunAkademik = TahunAkademik::orderBy('tahun_mulai', 'desc')->get();
@@ -112,6 +124,70 @@ class JadwalKuliahController extends Controller
             'fakultas',
             'programStudi'
         ));
+    }
+
+    public function exportExcel(Request $request)
+    {
+        $items = $this->buildIndexQuery($request)
+            ->orderBy('hari')
+            ->orderBy('jam_mulai')
+            ->get();
+
+        $rows = $items->map(function (JadwalKuliah $item, int $index) {
+            return [
+                $index + 1,
+                $item->kelas->mataKuliah->nama_mk ?? '-',
+                $item->kelas->mataKuliah->kode_mk ?? '-',
+                ucfirst($item->kelas->mataKuliah->level_matkul ?? '-'),
+                $item->kelas->nama_kelas ?? '-',
+                $item->kelas->dosen->nama_dosen ?? '-',
+                $item->hari,
+                $item->jam_mulai,
+                $item->jam_selesai,
+                ($item->ruang->kode_ruang ?? '-') . ' - ' . ($item->ruang->nama_ruang ?? '-'),
+                $item->semester->nama_semester ?? '-',
+                $item->tahunAkademik->nama ?? '-',
+            ];
+        });
+
+        $html = TabularExport::htmlTable(
+            ['No', 'Mata Kuliah', 'Kode MK', 'Level', 'Kelas', 'Dosen', 'Hari', 'Jam Mulai', 'Jam Selesai', 'Ruangan', 'Semester', 'Tahun Akademik'],
+            $rows
+        );
+
+        return TabularExport::excelResponse('jadwal-kuliah.xls', $html);
+    }
+
+    public function exportPdf(Request $request)
+    {
+        $items = $this->buildIndexQuery($request)
+            ->orderBy('hari')
+            ->orderBy('jam_mulai')
+            ->get();
+
+        $rows = $items->map(function (JadwalKuliah $item, int $index) {
+            return [
+                $index + 1,
+                $item->kelas->mataKuliah->nama_mk ?? '-',
+                $item->kelas->mataKuliah->kode_mk ?? '-',
+                ucfirst($item->kelas->mataKuliah->level_matkul ?? '-'),
+                $item->kelas->nama_kelas ?? '-',
+                $item->kelas->dosen->nama_dosen ?? '-',
+                $item->hari,
+                $item->jam_mulai,
+                $item->jam_selesai,
+                ($item->ruang->kode_ruang ?? '-') . ' - ' . ($item->ruang->nama_ruang ?? '-'),
+                $item->semester->nama_semester ?? '-',
+                $item->tahunAkademik->nama ?? '-',
+            ];
+        });
+
+        $html = TabularExport::htmlTable(
+            ['No', 'Mata Kuliah', 'Kode MK', 'Level', 'Kelas', 'Dosen', 'Hari', 'Jam Mulai', 'Jam Selesai', 'Ruangan', 'Semester', 'Tahun Akademik'],
+            $rows
+        );
+
+        return Pdf::loadHTML($html)->download('jadwal-kuliah.pdf');
     }
 
     /**
@@ -163,6 +239,8 @@ class JadwalKuliahController extends Controller
             'jam_mulai' => 'required|date_format:H:i',
             'jam_selesai' => 'required|date_format:H:i|after:jam_mulai',
             'ruang_id' => 'required|exists:ruang,id',
+            'file_ids' => 'nullable|array',
+            'file_ids.*' => 'exists:file_uploads,id',
         ];
 
         $validated = $request->validate($rules);
@@ -220,7 +298,14 @@ class JadwalKuliahController extends Controller
 
         DB::beginTransaction();
         try {
-            JadwalKuliah::create($validated);
+            $jadwal = JadwalKuliah::create($validated);
+
+            if ($request->filled('file_ids')) {
+                FileUpload::whereIn('id', $request->file_ids)->update([
+                    'fileable_id' => $jadwal->id,
+                    'fileable_type' => JadwalKuliah::class,
+                ]);
+            }
 
             DB::commit();
             return redirect()->route('jadwal-kuliah.index')
@@ -245,6 +330,7 @@ class JadwalKuliahController extends Controller
             'ruang',
             'tahunAkademik',
             'semester',
+            'files',
             'createdBy',
             'updatedBy'
         ]);
@@ -257,7 +343,7 @@ class JadwalKuliahController extends Controller
      */
     public function edit(JadwalKuliah $jadwalKuliah)
     {
-        $jadwalKuliah->load('kelas.mataKuliah');
+        $jadwalKuliah->load('kelas.mataKuliah', 'files');
         
         $user = Auth::user();
         
@@ -302,6 +388,8 @@ class JadwalKuliahController extends Controller
             'jam_mulai' => 'required|date_format:H:i',
             'jam_selesai' => 'required|date_format:H:i|after:jam_mulai',
             'ruang_id' => 'required|exists:ruang,id',
+            'file_ids' => 'nullable|array',
+            'file_ids.*' => 'exists:file_uploads,id',
         ];
 
         $validated = $request->validate($rules);
@@ -362,6 +450,15 @@ class JadwalKuliahController extends Controller
         DB::beginTransaction();
         try {
             $jadwalKuliah->update($validated);
+
+            if ($request->filled('file_ids')) {
+                FileUpload::whereIn('id', $request->file_ids)
+                    ->where('fileable_id', 0)
+                    ->update([
+                        'fileable_id' => $jadwalKuliah->id,
+                        'fileable_type' => JadwalKuliah::class,
+                    ]);
+            }
 
             DB::commit();
             return redirect()->route('jadwal-kuliah.index')

@@ -122,6 +122,12 @@
                             <small class="text-muted">Minimal {{ $kela->terisi }} (jumlah mahasiswa terdaftar saat ini)</small>
                         </div>
 
+                        @include('components.file-upload', [
+                            'existingFiles' => $kela->files ?? collect(),
+                            'fileableType' => \App\Models\Kelas::class,
+                            'fileableId' => $kela->id,
+                        ])
+
                         <div class="d-flex justify-content-end gap-2">
                             <a href="{{ route('kelas.index') }}" class="btn btn-secondary">
                                 <i class="bi bi-arrow-left"></i> Kembali

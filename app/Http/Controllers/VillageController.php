@@ -12,6 +12,81 @@ use Illuminate\Support\Facades\Auth;
 class VillageController extends Controller
 {
     /**
+     * Export data desa/kelurahan ke Excel (.xls - HTML table)
+     */
+    public function exportExcel(Request $request)
+    {
+        $query = Village::with(['subRegency.regency.province']);
+
+        if ($request->filled('province_id')) {
+            $query->whereHas('subRegency.regency', function ($q) use ($request) {
+                $q->where('province_id', $request->province_id);
+            });
+        }
+
+        if ($request->filled('regency_id')) {
+            $query->whereHas('subRegency', function ($q) use ($request) {
+                $q->where('regency_id', $request->regency_id);
+            });
+        }
+
+        if ($request->filled('sub_regency_id')) {
+            $query->where('sub_regency_id', $request->sub_regency_id);
+        }
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('code', 'like', "%{$search}%")
+                    ->orWhere('postal_code', 'like', "%{$search}%");
+            });
+        }
+
+        $villages = $query->orderBy('name')->get();
+
+        $filename = 'villages_' . now()->format('Ymd_His') . '.xls';
+        $headers = [
+            'Content-Type' => 'application/vnd.ms-excel; charset=UTF-8',
+            'Content-Disposition' => "attachment; filename=\"$filename\"",
+            'Cache-Control' => 'max-age=0',
+        ];
+
+        $bom = "\xEF\xBB\xBF";
+        $html = '<html><head><meta charset="UTF-8"></head><body>'
+            . '<table border="1" cellspacing="0" cellpadding="4">'
+            . '<thead><tr>'
+            . '<th>No</th><th>Kode</th><th>Nama Desa/Kelurahan</th><th>Kecamatan</th><th>Kabupaten/Kota</th><th>Provinsi</th><th>Kode Pos</th>'
+            . '</tr></thead><tbody>';
+
+        foreach ($villages as $i => $village) {
+            $regencyLabel = '';
+            if ($village->subRegency && $village->subRegency->regency) {
+                $regencyLabel = trim(($village->subRegency->regency->type ?? '') . ' ' . ($village->subRegency->regency->name ?? ''));
+            }
+
+            $provinceName = '';
+            if ($village->subRegency && $village->subRegency->regency && $village->subRegency->regency->province) {
+                $provinceName = $village->subRegency->regency->province->name;
+            }
+
+            $html .= '<tr>'
+                . '<td>' . e((string) ($i + 1)) . '</td>'
+                . '<td>' . e((string) $village->code) . '</td>'
+                . '<td>' . e((string) $village->name) . '</td>'
+                . '<td>' . e((string) ($village->subRegency ? $village->subRegency->name : '')) . '</td>'
+                . '<td>' . e((string) $regencyLabel) . '</td>'
+                . '<td>' . e((string) $provinceName) . '</td>'
+                . '<td>' . e((string) $village->postal_code) . '</td>'
+                . '</tr>';
+        }
+
+        $html .= '</tbody></table></body></html>';
+
+        return response($bom . $html, 200, $headers);
+    }
+
+    /**
      * Export data desa/kelurahan ke CSV
      */
     public function exportCsv()

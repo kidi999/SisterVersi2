@@ -616,11 +616,13 @@
                                 <i class="bi bi-calendar3"></i> Jadwal Kuliah
                             </a>
                         </li>
+                        @if (Route::has('absensi-mahasiswa.kehadiran-saya'))
                         <li class="nav-item">
                             <a class="nav-link {{ request()->routeIs('absensi-mahasiswa.kehadiran-saya') ? 'active' : '' }}" href="{{ route('absensi-mahasiswa.kehadiran-saya') }}">
                                 <i class="bi bi-person-check"></i> Kehadiran Saya
                             </a>
                         </li>
+                        @endif
                         <li class="nav-item">
                             <a class="nav-link {{ request()->routeIs('my-payments.*') ? 'active' : '' }}" href="{{ route('my-payments.index') }}">
                                 <i class="bi bi-credit-card"></i> Tagihan & Pembayaran

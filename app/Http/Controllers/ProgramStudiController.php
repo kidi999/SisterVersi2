@@ -6,8 +6,10 @@ use App\Http\Controllers\Controller;
 use App\Models\ProgramStudi;
 use App\Models\Fakultas;
 use App\Models\FileUpload;
+use App\Support\TabularExport;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class ProgramStudiController extends Controller
 {
@@ -39,10 +41,104 @@ class ProgramStudiController extends Controller
             });
         }
 
-        $programStudi = $query->orderBy('nama_prodi')->paginate(10);
+        $programStudi = $query->orderBy('nama_prodi')->paginate(10)->withQueryString();
         $fakultas = Fakultas::orderBy('nama_fakultas')->get();
 
         return view('program-studi.index', compact('programStudi', 'fakultas'));
+    }
+
+    public function exportExcel(Request $request)
+    {
+        $query = ProgramStudi::with('fakultas');
+
+        if ($request->filled('fakultas_id')) {
+            $query->where('fakultas_id', $request->fakultas_id);
+        }
+
+        if ($request->filled('jenjang')) {
+            $query->where('jenjang', $request->jenjang);
+        }
+
+        if ($request->filled('akreditasi')) {
+            $query->where('akreditasi', $request->akreditasi);
+        }
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('nama_prodi', 'like', "%{$search}%")
+                    ->orWhere('kode_prodi', 'like', "%{$search}%")
+                    ->orWhere('kaprodi', 'like', "%{$search}%");
+            });
+        }
+
+        $items = $query->orderBy('nama_prodi')->get();
+
+        $rows = $items->map(function (ProgramStudi $prodi, int $index) {
+            return [
+                $index + 1,
+                $prodi->kode_prodi,
+                $prodi->nama_prodi,
+                $prodi->fakultas?->nama_fakultas ?? '-',
+                $prodi->jenjang,
+                $prodi->kaprodi ?? '-',
+                $prodi->akreditasi ?? '-',
+            ];
+        });
+
+        $html = TabularExport::htmlTable(
+            ['No', 'Kode', 'Nama Program Studi', 'Fakultas', 'Jenjang', 'Kaprodi', 'Akreditasi'],
+            $rows
+        );
+
+        return TabularExport::excelResponse('program_studi.xls', $html);
+    }
+
+    public function exportPdf(Request $request)
+    {
+        $query = ProgramStudi::with('fakultas');
+
+        if ($request->filled('fakultas_id')) {
+            $query->where('fakultas_id', $request->fakultas_id);
+        }
+
+        if ($request->filled('jenjang')) {
+            $query->where('jenjang', $request->jenjang);
+        }
+
+        if ($request->filled('akreditasi')) {
+            $query->where('akreditasi', $request->akreditasi);
+        }
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('nama_prodi', 'like', "%{$search}%")
+                    ->orWhere('kode_prodi', 'like', "%{$search}%")
+                    ->orWhere('kaprodi', 'like', "%{$search}%");
+            });
+        }
+
+        $items = $query->orderBy('nama_prodi')->get();
+
+        $rows = $items->map(function (ProgramStudi $prodi, int $index) {
+            return [
+                $index + 1,
+                $prodi->kode_prodi,
+                $prodi->nama_prodi,
+                $prodi->fakultas?->nama_fakultas ?? '-',
+                $prodi->jenjang,
+                $prodi->kaprodi ?? '-',
+                $prodi->akreditasi ?? '-',
+            ];
+        });
+
+        $html = TabularExport::htmlTable(
+            ['No', 'Kode', 'Nama Program Studi', 'Fakultas', 'Jenjang', 'Kaprodi', 'Akreditasi'],
+            $rows
+        );
+
+        return Pdf::loadHTML($html)->download('program_studi.pdf');
     }
 
     /**

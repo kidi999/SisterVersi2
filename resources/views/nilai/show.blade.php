@@ -110,6 +110,36 @@
                 </div>
             </div>
 
+            <div class="card mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="card-title mb-0"><i class="bi bi-paperclip"></i> Lampiran</h5>
+                </div>
+                <div class="card-body">
+                    @if(($nilai->files ?? collect())->count() > 0)
+                        <div class="list-group">
+                            @foreach($nilai->files as $file)
+                                <div class="list-group-item d-flex justify-content-between align-items-center">
+                                    <div class="d-flex align-items-center">
+                                        <i class="{{ $file->icon_class }} fs-4 me-2"></i>
+                                        <div>
+                                            <div><strong>{{ $file->file_name }}</strong></div>
+                                            <small class="text-muted">{{ $file->formatted_size }}</small>
+                                        </div>
+                                    </div>
+                                    <a class="btn btn-sm btn-outline-primary" href="{{ route('api.file-upload.download', $file->id) }}">
+                                        <i class="bi bi-download"></i> Unduh
+                                    </a>
+                                </div>
+                            @endforeach
+                        </div>
+                    @else
+                        <div class="alert alert-info mb-0">
+                            <i class="bi bi-info-circle"></i> Belum ada lampiran.
+                        </div>
+                    @endif
+                </div>
+            </div>
+
             @if(in_array(Auth::user()->role->name, ['dosen', 'admin_prodi', 'admin_fakultas', 'admin_universitas', 'super_admin']))
             <div class="card">
                 <div class="card-header bg-warning">

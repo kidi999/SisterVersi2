@@ -20,6 +20,10 @@ class DatabaseSeeder extends Seeder
             FakultasSeeder::class,
             RoleAndUserSeeder::class,
             UniversitySeeder::class,
+            JenisPembayaranSeeder::class,
+            RuangSeeder::class,
+            HariLiburSeeder::class,
+            DummyDataSeeder::class,
         ]);
     }
 }

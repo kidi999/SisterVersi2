@@ -196,6 +196,12 @@
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
                     </div>
+
+                    @include('components.file-upload', [
+                        'existingFiles' => [],
+                        'fileableType' => \App\Models\Nilai::class,
+                        'fileableId' => 0,
+                    ])
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>

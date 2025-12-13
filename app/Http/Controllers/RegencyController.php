@@ -13,6 +13,58 @@ use Barryvdh\DomPDF\Facade\Pdf;
 class RegencyController extends Controller
 {
     /**
+     * Export regencies as Excel (.xls - HTML table).
+     */
+    public function exportExcel(Request $request)
+    {
+        $search = $request->input('search');
+        $sort = $request->input('sort', 'name');
+        $order = $request->input('order', 'asc');
+
+        $query = Regency::with('province')->withCount('subRegencies')->orderBy($sort, $order);
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%$search%")
+                    ->orWhere('code', 'like', "%$search%")
+                    ->orWhereHas('province', function ($q2) use ($search) {
+                        $q2->where('name', 'like', "%$search%")
+                            ->orWhere('code', 'like', "%$search%");
+                    });
+            });
+        }
+
+        $regencies = $query->get();
+
+        $filename = 'kabupaten_kota.xls';
+        $headers = [
+            'Content-Type' => 'application/vnd.ms-excel; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+            'Cache-Control' => 'max-age=0',
+        ];
+
+        $bom = "\xEF\xBB\xBF";
+        $html = '<html><head><meta charset="UTF-8"></head><body>'
+            . '<table border="1" cellspacing="0" cellpadding="4">'
+            . '<thead><tr>'
+            . '<th>ID</th><th>Kode</th><th>Nama Kabupaten/Kota</th><th>Provinsi</th><th>Jml Kecamatan</th>'
+            . '</tr></thead><tbody>';
+
+        foreach ($regencies as $regency) {
+            $html .= '<tr>'
+                . '<td>' . e((string) $regency->id) . '</td>'
+                . '<td>' . e((string) $regency->code) . '</td>'
+                . '<td>' . e((string) $regency->name) . '</td>'
+                . '<td>' . e((string) ($regency->province ? $regency->province->name : '-')) . '</td>'
+                . '<td>' . e((string) $regency->sub_regencies_count) . '</td>'
+                . '</tr>';
+        }
+
+        $html .= '</tbody></table></body></html>';
+
+        return response($bom . $html, 200, $headers);
+    }
+
+    /**
      * Export regencies as CSV.
      */
     public function exportCsv(Request $request)

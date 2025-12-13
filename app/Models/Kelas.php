@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Traits\AuditableTrait;
 
@@ -63,5 +64,18 @@ class Kelas extends Model
     public function krs(): HasMany
     {
         return $this->hasMany(Krs::class);
+    }
+
+    /**
+     * Alias relasi KRS (digunakan di beberapa controller/view).
+     */
+    public function krsItems(): HasMany
+    {
+        return $this->hasMany(Krs::class);
+    }
+
+    public function files(): MorphMany
+    {
+        return $this->morphMany(FileUpload::class, 'fileable');
     }
 }

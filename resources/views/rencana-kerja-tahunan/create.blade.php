@@ -157,6 +157,13 @@
                             </div>
                         </div>
 
+                        @include('components.file-upload', [
+                            'existingFiles' => collect(),
+                            'fileableType' => \App\Models\RencanaKerjaTahunan::class,
+                            'fileableId' => 0,
+                            'maxFiles' => 10,
+                        ])
+
                         <div class="d-flex justify-content-between mt-4">
                             <a href="{{ route('rencana-kerja-tahunan.index') }}" class="btn btn-secondary">
                                 <i class="bi bi-arrow-left me-1"></i>Kembali

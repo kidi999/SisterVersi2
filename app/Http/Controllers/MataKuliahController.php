@@ -6,8 +6,10 @@ use App\Models\MataKuliah;
 use App\Models\Fakultas;
 use App\Models\ProgramStudi;
 use App\Models\FileUpload;
+use App\Support\TabularExport;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class MataKuliahController extends Controller
 {
@@ -77,11 +79,179 @@ class MataKuliahController extends Controller
             });
         }
 
-        $mataKuliah = $query->latest()->paginate(20);
+        $mataKuliah = $query->latest()->paginate(20)->withQueryString();
         $fakultas = Fakultas::all();
         $programStudi = ProgramStudi::all();
 
         return view('mata-kuliah.index', compact('mataKuliah', 'fakultas', 'programStudi'));
+    }
+
+    public function exportExcel(Request $request)
+    {
+        $query = MataKuliah::with(['fakultas', 'programStudi.fakultas']);
+
+        if ($request->filled('level_matkul')) {
+            $level = $request->level_matkul;
+
+            if ($level === 'universitas') {
+                $query->where('level_matkul', 'universitas');
+            } elseif ($level === 'fakultas') {
+                $query->where(function ($q) {
+                    $q->where('level_matkul', 'fakultas')
+                        ->orWhere('level_matkul', 'universitas');
+                });
+            } elseif ($level === 'prodi') {
+                $query->where(function ($q) {
+                    $q->where('level_matkul', 'prodi')
+                        ->orWhere('level_matkul', 'fakultas')
+                        ->orWhere('level_matkul', 'universitas');
+                });
+            }
+        }
+
+        if ($request->filled('fakultas_id')) {
+            $query->where(function ($q) use ($request) {
+                $q->where('fakultas_id', $request->fakultas_id)
+                    ->orWhere('level_matkul', 'universitas')
+                    ->orWhereHas('programStudi', function ($q2) use ($request) {
+                        $q2->where('fakultas_id', $request->fakultas_id);
+                    });
+            });
+        }
+
+        if ($request->filled('program_studi_id')) {
+            $query->where(function ($q) use ($request) {
+                $q->where('program_studi_id', $request->program_studi_id)
+                    ->orWhere('level_matkul', 'universitas')
+                    ->orWhere(function ($q2) use ($request) {
+                        $q2->where('level_matkul', 'fakultas')
+                            ->whereHas('fakultas', function ($q3) use ($request) {
+                                $prodi = ProgramStudi::find($request->program_studi_id);
+                                if ($prodi) {
+                                    $q3->where('id', $prodi->fakultas_id);
+                                }
+                            });
+                    });
+            });
+        }
+
+        if ($request->filled('jenis')) {
+            $query->where('jenis', $request->jenis);
+        }
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('kode_mk', 'like', "%{$search}%")
+                    ->orWhere('nama_mk', 'like', "%{$search}%");
+            });
+        }
+
+        $items = $query->latest()->get();
+
+        $rows = $items->map(function (MataKuliah $mk, int $index) {
+            return [
+                $index + 1,
+                $mk->kode_mk,
+                $mk->nama_mk,
+                (string) $mk->sks,
+                (string) $mk->semester,
+                $mk->jenis,
+                $mk->level_label,
+                $mk->scope_label,
+            ];
+        });
+
+        $html = TabularExport::htmlTable(
+            ['No', 'Kode MK', 'Nama Mata Kuliah', 'SKS', 'Semester', 'Jenis', 'Level', 'Scope'],
+            $rows
+        );
+
+        return TabularExport::excelResponse('mata_kuliah.xls', $html);
+    }
+
+    public function exportPdf(Request $request)
+    {
+        $query = MataKuliah::with(['fakultas', 'programStudi.fakultas']);
+
+        if ($request->filled('level_matkul')) {
+            $level = $request->level_matkul;
+
+            if ($level === 'universitas') {
+                $query->where('level_matkul', 'universitas');
+            } elseif ($level === 'fakultas') {
+                $query->where(function ($q) {
+                    $q->where('level_matkul', 'fakultas')
+                        ->orWhere('level_matkul', 'universitas');
+                });
+            } elseif ($level === 'prodi') {
+                $query->where(function ($q) {
+                    $q->where('level_matkul', 'prodi')
+                        ->orWhere('level_matkul', 'fakultas')
+                        ->orWhere('level_matkul', 'universitas');
+                });
+            }
+        }
+
+        if ($request->filled('fakultas_id')) {
+            $query->where(function ($q) use ($request) {
+                $q->where('fakultas_id', $request->fakultas_id)
+                    ->orWhere('level_matkul', 'universitas')
+                    ->orWhereHas('programStudi', function ($q2) use ($request) {
+                        $q2->where('fakultas_id', $request->fakultas_id);
+                    });
+            });
+        }
+
+        if ($request->filled('program_studi_id')) {
+            $query->where(function ($q) use ($request) {
+                $q->where('program_studi_id', $request->program_studi_id)
+                    ->orWhere('level_matkul', 'universitas')
+                    ->orWhere(function ($q2) use ($request) {
+                        $q2->where('level_matkul', 'fakultas')
+                            ->whereHas('fakultas', function ($q3) use ($request) {
+                                $prodi = ProgramStudi::find($request->program_studi_id);
+                                if ($prodi) {
+                                    $q3->where('id', $prodi->fakultas_id);
+                                }
+                            });
+                    });
+            });
+        }
+
+        if ($request->filled('jenis')) {
+            $query->where('jenis', $request->jenis);
+        }
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('kode_mk', 'like', "%{$search}%")
+                    ->orWhere('nama_mk', 'like', "%{$search}%");
+            });
+        }
+
+        $items = $query->latest()->get();
+
+        $rows = $items->map(function (MataKuliah $mk, int $index) {
+            return [
+                $index + 1,
+                $mk->kode_mk,
+                $mk->nama_mk,
+                (string) $mk->sks,
+                (string) $mk->semester,
+                $mk->jenis,
+                $mk->level_label,
+                $mk->scope_label,
+            ];
+        });
+
+        $html = TabularExport::htmlTable(
+            ['No', 'Kode MK', 'Nama Mata Kuliah', 'SKS', 'Semester', 'Jenis', 'Level', 'Scope'],
+            $rows
+        );
+
+        return Pdf::loadHTML($html)->download('mata_kuliah.pdf');
     }
 
     public function create()

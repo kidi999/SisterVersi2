@@ -7,11 +7,19 @@
 <div class="container-fluid px-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="h3 mb-0">Jadwal Kuliah</h1>
-        @if(Auth::user()->hasRole(['super_admin', 'admin_universitas', 'admin_fakultas', 'admin_prodi']))
-            <a href="{{ route('jadwal-kuliah.create') }}" class="btn btn-primary">
-                <i class="bi bi-plus-circle"></i> Tambah Jadwal
+        <div>
+            <a href="{{ route('jadwal-kuliah.exportExcel', request()->query()) }}" class="btn btn-success me-2">
+                <i class="bi bi-file-earmark-excel"></i> Export Excel
             </a>
-        @endif
+            <a href="{{ route('jadwal-kuliah.exportPdf', request()->query()) }}" class="btn btn-danger me-2">
+                <i class="bi bi-file-earmark-pdf"></i> Export PDF
+            </a>
+            @if(Auth::user()->hasRole(['super_admin', 'admin_universitas', 'admin_fakultas', 'admin_prodi']))
+                <a href="{{ route('jadwal-kuliah.create') }}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle"></i> Tambah Jadwal
+                </a>
+            @endif
+        </div>
     </div>
 
     <!-- Filters -->

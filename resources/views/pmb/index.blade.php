@@ -8,6 +8,14 @@
         <h1><i class="bi bi-mortarboard-fill"></i> Selamat Datang</h1>
         <h2>Penerimaan Mahasiswa Baru</h2>
         <p class="lead">Universitas XYZ - Tahun Akademik {{ date('Y') }}/{{ date('Y') + 1 }}</p>
+        <div class="mt-3">
+            <a href="{{ route('pmb.exportExcel') }}" class="btn btn-success btn-sm me-2">
+                <i class="bi bi-file-earmark-excel"></i> Export Excel
+            </a>
+            <a href="{{ route('pmb.exportPdf') }}" class="btn btn-danger btn-sm">
+                <i class="bi bi-file-earmark-pdf"></i> Export PDF
+            </a>
+        </div>
         <div class="mt-4">
             <a href="{{ route('pmb.create') }}" class="btn btn-light btn-lg btn-pmb me-3">
                 <i class="bi bi-pencil-square"></i> Daftar Sekarang

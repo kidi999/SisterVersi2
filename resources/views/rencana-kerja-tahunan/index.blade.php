@@ -7,9 +7,17 @@
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h4 class="mb-0"><i class="bi bi-clipboard-data me-2"></i>Rencana Kerja Tahunan</h4>
-                    <a href="{{ route('rencana-kerja-tahunan.create') }}" class="btn btn-primary">
-                        <i class="bi bi-plus-circle me-1"></i>Tambah RKT
-                    </a>
+                    <div>
+                        <a href="{{ route('rencana-kerja-tahunan.exportExcel', request()->query()) }}" class="btn btn-success me-2">
+                            <i class="bi bi-file-earmark-excel me-1"></i>Export Excel
+                        </a>
+                        <a href="{{ route('rencana-kerja-tahunan.exportPdf', request()->query()) }}" class="btn btn-danger me-2">
+                            <i class="bi bi-file-earmark-pdf me-1"></i>Export PDF
+                        </a>
+                        <a href="{{ route('rencana-kerja-tahunan.create') }}" class="btn btn-primary">
+                            <i class="bi bi-plus-circle me-1"></i>Tambah RKT
+                        </a>
+                    </div>
                 </div>
                 <div class="card-body">
                     {{-- Filter Form --}}

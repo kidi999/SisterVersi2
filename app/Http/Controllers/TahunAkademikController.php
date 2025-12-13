@@ -3,15 +3,70 @@
 namespace App\Http\Controllers;
 
 use App\Models\TahunAkademik;
+use App\Support\TabularExport;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class TahunAkademikController extends Controller
 {
     public function index()
     {
-        $tahunAkademiks = TahunAkademik::withCount('semesters')->orderBy('tahun_mulai', 'desc')->get();
+        $tahunAkademiks = TahunAkademik::withCount('semesters')
+            ->orderBy('tahun_mulai', 'desc')
+            ->paginate(25)
+            ->withQueryString();
         return view('tahun-akademik.index', compact('tahunAkademiks'));
+    }
+
+    public function exportExcel(Request $request)
+    {
+        $items = TahunAkademik::withCount('semesters')
+            ->orderBy('tahun_mulai', 'desc')
+            ->get();
+
+        $rows = $items->map(function (TahunAkademik $ta, int $index) {
+            return [
+                $index + 1,
+                $ta->kode,
+                $ta->nama,
+                $ta->tahun_mulai . '/' . $ta->tahun_selesai,
+                (string) $ta->semesters_count,
+                $ta->is_active ? 'Aktif' : 'Nonaktif',
+            ];
+        });
+
+        $html = TabularExport::htmlTable(
+            ['No', 'Kode', 'Nama', 'Periode', 'Semester', 'Status'],
+            $rows
+        );
+
+        return TabularExport::excelResponse('tahun_akademik.xls', $html);
+    }
+
+    public function exportPdf(Request $request)
+    {
+        $items = TahunAkademik::withCount('semesters')
+            ->orderBy('tahun_mulai', 'desc')
+            ->get();
+
+        $rows = $items->map(function (TahunAkademik $ta, int $index) {
+            return [
+                $index + 1,
+                $ta->kode,
+                $ta->nama,
+                $ta->tahun_mulai . '/' . $ta->tahun_selesai,
+                (string) $ta->semesters_count,
+                $ta->is_active ? 'Aktif' : 'Nonaktif',
+            ];
+        });
+
+        $html = TabularExport::htmlTable(
+            ['No', 'Kode', 'Nama', 'Periode', 'Semester', 'Status'],
+            $rows
+        );
+
+        return Pdf::loadHTML($html)->download('tahun_akademik.pdf');
     }
 
     public function create()

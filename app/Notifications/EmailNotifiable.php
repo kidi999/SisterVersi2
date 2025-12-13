@@ -19,4 +19,17 @@ class EmailNotifiable
     {
         return $this->email;
     }
+
+    /**
+     * Provide a stable identifier so Notification fakes can track this notifiable.
+     */
+    public function getKey(): string
+    {
+        return (string) $this->email;
+    }
+
+    public function getKeyName(): string
+    {
+        return 'email';
+    }
 }

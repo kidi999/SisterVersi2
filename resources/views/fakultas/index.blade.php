@@ -13,6 +13,12 @@
                     <i class="bi bi-trash"></i> Data Terhapus
                 </a>
             @endif
+            <a href="{{ route('fakultas.exportExcel') }}" class="btn btn-success me-2">
+                <i class="bi bi-file-earmark-excel"></i> Export Excel
+            </a>
+            <a href="{{ route('fakultas.exportPdf') }}" class="btn btn-danger me-2">
+                <i class="bi bi-file-earmark-pdf"></i> Export PDF
+            </a>
             <a href="{{ route('fakultas.create') }}" class="btn btn-primary">
                 <i class="bi bi-plus-circle"></i> Tambah Fakultas
             </a>
@@ -43,7 +49,7 @@
                 <tbody>
                     @forelse($fakultas as $index => $item)
                     <tr>
-                        <td>{{ $index + 1 }}</td>
+                        <td>{{ ($fakultas->firstItem() ?? 0) + $index }}</td>
                         <td><span class="badge bg-primary">{{ $item->kode_fakultas }}</span></td>
                         <td>{{ $item->nama_fakultas }}</td>
                         <td>{{ $item->singkatan }}</td>
@@ -58,7 +64,7 @@
                                 <span class="text-muted">-</span>
                             @endif
                         </td>
-                        <td><span class="badge bg-info">{{ $item->programStudi->count() }}</span></td>
+                        <td><span class="badge bg-info">{{ $item->program_studi_count ?? $item->programStudi->count() }}</span></td>
                         <td>
                             <div class="btn-group" role="group">
                                 <a href="{{ route('fakultas.show', $item->id) }}" class="btn btn-sm btn-info" title="Detail">
@@ -85,6 +91,10 @@
                     @endforelse
                 </tbody>
             </table>
+        </div>
+
+        <div class="d-flex justify-content-center mt-3">
+            {{ $fakultas->links() }}
         </div>
     </div>
 </div>

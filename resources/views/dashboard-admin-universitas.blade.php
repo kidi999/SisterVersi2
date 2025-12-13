@@ -9,6 +9,15 @@
         </div>
     </div>
 
+    <div class="d-flex justify-content-end mb-3">
+        <a href="{{ route('dashboard.exportExcel') }}" class="btn btn-success btn-sm me-2">
+            <i class="bi bi-file-earmark-excel"></i> Export Excel
+        </a>
+        <a href="{{ route('dashboard.exportPdf') }}" class="btn btn-danger btn-sm">
+            <i class="bi bi-file-earmark-pdf"></i> Export PDF
+        </a>
+    </div>
+
     <!-- Statistics Cards -->
     <div class="row mb-4">
         <div class="col-xl-3 col-md-6 mb-3">

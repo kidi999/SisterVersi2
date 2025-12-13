@@ -6,6 +6,8 @@ use App\Models\PendaftaranMahasiswa;
 use App\Models\ProgramStudi;
 use App\Models\Province;
 use App\Models\FileUpload;
+use App\Support\TabularExport;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
@@ -21,6 +23,56 @@ class PmbController extends Controller
     public function index()
     {
         return view('pmb.index');
+    }
+
+    public function exportExcel(Request $request)
+    {
+        $programStudi = ProgramStudi::with('fakultas')
+            ->orderBy('nama_prodi')
+            ->get();
+
+        $currentYear = date('Y');
+        $nextYear = $currentYear + 1;
+        $tahunAkademik = "$currentYear/$nextYear";
+
+        $headers = ['Tahun Akademik', 'Fakultas', 'Program Studi', 'Jenjang', 'Akreditasi'];
+        $rows = $programStudi->map(function ($prodi) use ($tahunAkademik) {
+            return [
+                $tahunAkademik,
+                $prodi->fakultas->nama_fakultas ?? '-',
+                $prodi->nama_prodi ?? '-',
+                $prodi->jenjang ?? '-',
+                $prodi->akreditasi ?? '-',
+            ];
+        });
+
+        $html = TabularExport::htmlTable($headers, $rows);
+        return TabularExport::excelResponse('pmb_program_studi.xls', $html);
+    }
+
+    public function exportPdf(Request $request)
+    {
+        $programStudi = ProgramStudi::with('fakultas')
+            ->orderBy('nama_prodi')
+            ->get();
+
+        $currentYear = date('Y');
+        $nextYear = $currentYear + 1;
+        $tahunAkademik = "$currentYear/$nextYear";
+
+        $headers = ['Tahun Akademik', 'Fakultas', 'Program Studi', 'Jenjang', 'Akreditasi'];
+        $rows = $programStudi->map(function ($prodi) use ($tahunAkademik) {
+            return [
+                $tahunAkademik,
+                $prodi->fakultas->nama_fakultas ?? '-',
+                $prodi->nama_prodi ?? '-',
+                $prodi->jenjang ?? '-',
+                $prodi->akreditasi ?? '-',
+            ];
+        });
+
+        $html = TabularExport::htmlTable($headers, $rows);
+        return Pdf::loadHTML($html)->setPaper('A4', 'landscape')->download('pmb_program_studi.pdf');
     }
 
     /**
@@ -97,6 +149,8 @@ class PmbController extends Controller
             // Attach files
             if ($request->filled('file_ids')) {
                 FileUpload::whereIn('id', $request->file_ids)
+                    ->where('fileable_type', PendaftaranMahasiswa::class)
+                    ->where('fileable_id', 0)
                     ->update([
                         'fileable_type' => PendaftaranMahasiswa::class,
                         'fileable_id' => $pendaftaran->id

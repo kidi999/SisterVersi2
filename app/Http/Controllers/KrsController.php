@@ -6,6 +6,10 @@ use App\Models\Krs;
 use App\Models\Kelas;
 use App\Models\Mahasiswa;
 use App\Models\TahunAkademik;
+use App\Models\FileUpload;
+use App\Support\TabularExport;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
@@ -80,6 +84,146 @@ class KrsController extends Controller
         return view('krs.index', compact('krs', 'tahunAjaranList'));
     }
 
+    public function exportExcel(Request $request)
+    {
+        $user = Auth::user();
+        $query = Krs::with(['mahasiswa.programStudi', 'kelas.mataKuliah']);
+
+        if ($user->role->name == 'mahasiswa') {
+            if ($user->mahasiswa_id) {
+                $query->where('mahasiswa_id', $user->mahasiswa_id);
+            } else {
+                return redirect()->route('dashboard')
+                    ->with('error', 'Data mahasiswa tidak ditemukan. Silakan hubungi administrator.');
+            }
+        } elseif ($user->role->name == 'dosen') {
+            $query->whereHas('kelas', function ($q) use ($user) {
+                $q->where('dosen_id', $user->dosen->id ?? 0);
+            });
+        } elseif (in_array($user->role->name, ['admin_prodi'])) {
+            $query->whereHas('mahasiswa', function ($q) use ($user) {
+                $q->where('program_studi_id', $user->program_studi_id);
+            });
+        } elseif ($user->role->name == 'admin_fakultas') {
+            $query->whereHas('mahasiswa.programStudi', function ($q) use ($user) {
+                $q->where('fakultas_id', $user->fakultas_id);
+            });
+        }
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->whereHas('mahasiswa', function ($q) use ($search) {
+                $q->where('nim', 'like', "%{$search}%")
+                    ->orWhere('nama_mahasiswa', 'like', "%{$search}%")
+                    ;
+            });
+        }
+
+        if ($request->filled('tahun_ajaran')) {
+            $query->where('tahun_ajaran', $request->tahun_ajaran);
+        }
+
+        if ($request->filled('semester')) {
+            $query->where('semester', $request->semester);
+        }
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        $krs = $query->latest()->get();
+
+        $headers = ['NIM', 'Nama Mahasiswa', 'Program Studi', 'Kode Kelas', 'Mata Kuliah', 'SKS', 'Tahun Ajaran', 'Semester', 'Status', 'Tanggal Pengajuan'];
+        $rows = $krs->map(function (Krs $item) {
+            return [
+                $item->mahasiswa?->nim ?? '-',
+                $item->mahasiswa?->nama ?? ($item->mahasiswa?->nama_mahasiswa ?? '-'),
+                $item->mahasiswa?->programStudi?->nama ?? ($item->mahasiswa?->programStudi?->nama_prodi ?? '-'),
+                $item->kelas?->kode_kelas ?? '-',
+                $item->kelas?->mataKuliah?->nama ?? ($item->kelas?->mataKuliah?->nama_mk ?? '-'),
+                (string) ($item->kelas?->mataKuliah?->sks ?? 0),
+                $item->tahun_ajaran,
+                $item->semester,
+                $item->status,
+                $item->tanggal_pengajuan ? Carbon::parse($item->tanggal_pengajuan)->format('Y-m-d H:i:s') : '-',
+            ];
+        })->toArray();
+
+        $html = TabularExport::htmlTable($headers, $rows);
+        return TabularExport::excelResponse('krs.xls', $html);
+    }
+
+    public function exportPdf(Request $request)
+    {
+        $user = Auth::user();
+        $query = Krs::with(['mahasiswa.programStudi', 'kelas.mataKuliah']);
+
+        if ($user->role->name == 'mahasiswa') {
+            if ($user->mahasiswa_id) {
+                $query->where('mahasiswa_id', $user->mahasiswa_id);
+            } else {
+                return redirect()->route('dashboard')
+                    ->with('error', 'Data mahasiswa tidak ditemukan. Silakan hubungi administrator.');
+            }
+        } elseif ($user->role->name == 'dosen') {
+            $query->whereHas('kelas', function ($q) use ($user) {
+                $q->where('dosen_id', $user->dosen->id ?? 0);
+            });
+        } elseif (in_array($user->role->name, ['admin_prodi'])) {
+            $query->whereHas('mahasiswa', function ($q) use ($user) {
+                $q->where('program_studi_id', $user->program_studi_id);
+            });
+        } elseif ($user->role->name == 'admin_fakultas') {
+            $query->whereHas('mahasiswa.programStudi', function ($q) use ($user) {
+                $q->where('fakultas_id', $user->fakultas_id);
+            });
+        }
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->whereHas('mahasiswa', function ($q) use ($search) {
+                $q->where('nim', 'like', "%{$search}%")
+                    ->orWhere('nama_mahasiswa', 'like', "%{$search}%");
+            });
+        }
+
+        if ($request->filled('tahun_ajaran')) {
+            $query->where('tahun_ajaran', $request->tahun_ajaran);
+        }
+
+        if ($request->filled('semester')) {
+            $query->where('semester', $request->semester);
+        }
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        $krs = $query->latest()->get();
+
+        $headers = ['NIM', 'Nama Mahasiswa', 'Program Studi', 'Kode Kelas', 'Mata Kuliah', 'SKS', 'Tahun Ajaran', 'Semester', 'Status', 'Tanggal Pengajuan'];
+        $rows = $krs->map(function (Krs $item) {
+            return [
+                $item->mahasiswa?->nim ?? '-',
+                $item->mahasiswa?->nama ?? ($item->mahasiswa?->nama_mahasiswa ?? '-'),
+                $item->mahasiswa?->programStudi?->nama ?? ($item->mahasiswa?->programStudi?->nama_prodi ?? '-'),
+                $item->kelas?->kode_kelas ?? '-',
+                $item->kelas?->mataKuliah?->nama ?? ($item->kelas?->mataKuliah?->nama_mk ?? '-'),
+                (string) ($item->kelas?->mataKuliah?->sks ?? 0),
+                $item->tahun_ajaran,
+                $item->semester,
+                $item->status,
+                $item->tanggal_pengajuan ? Carbon::parse($item->tanggal_pengajuan)->format('Y-m-d H:i:s') : '-',
+            ];
+        })->toArray();
+
+        $html = TabularExport::htmlTable($headers, $rows);
+
+        return Pdf::loadHTML($html)
+            ->setPaper('A4', 'landscape')
+            ->download('krs.pdf');
+    }
+
     /**
      * Show the form for creating a new resource (Mahasiswa mengisi KRS).
      */
@@ -130,6 +274,8 @@ class KrsController extends Controller
         $validated = $request->validate([
             'kelas_ids' => 'required|array',
             'kelas_ids.*' => 'exists:kelas,id',
+            'file_ids' => 'nullable|array',
+            'file_ids.*' => 'exists:file_uploads,id',
         ]);
 
         $user = Auth::user();
@@ -144,6 +290,8 @@ class KrsController extends Controller
 
         try {
             DB::beginTransaction();
+
+            $firstCreatedKrs = null;
 
             $totalSks = 0;
             $errors = [];
@@ -170,7 +318,7 @@ class KrsController extends Controller
                 }
 
                 // Create KRS
-                Krs::create([
+                $created = Krs::create([
                     'mahasiswa_id' => $mahasiswa->id,
                     'kelas_id' => $kelasId,
                     'tahun_ajaran' => $tahunAkademik->tahun_ajaran,
@@ -181,10 +329,23 @@ class KrsController extends Controller
                     'created_at' => now(),
                 ]);
 
+                if ($firstCreatedKrs === null) {
+                    $firstCreatedKrs = $created;
+                }
+
                 // Update terisi di kelas
                 $kelas->increment('terisi');
 
                 $totalSks += $kelas->mataKuliah->sks;
+            }
+
+            if ($firstCreatedKrs && $request->filled('file_ids') && is_array($request->file_ids)) {
+                FileUpload::whereIn('id', $request->file_ids)
+                    ->where('fileable_type', Krs::class)
+                    ->where('fileable_id', 0)
+                    ->update([
+                        'fileable_id' => $firstCreatedKrs->id,
+                    ]);
             }
 
             DB::commit();
@@ -210,7 +371,7 @@ class KrsController extends Controller
      */
     public function show(Krs $kr)
     {
-        $kr->load(['mahasiswa.programStudi', 'kelas.mataKuliah', 'kelas.dosen', 'nilai']);
+        $kr->load(['mahasiswa.programStudi', 'kelas.mataKuliah', 'kelas.dosen', 'nilai', 'files']);
         
         return view('krs.show', compact('kr'));
     }

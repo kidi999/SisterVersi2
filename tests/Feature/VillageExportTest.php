@@ -16,6 +16,17 @@ class VillageExportTest extends TestCase
 {
     use RefreshDatabase;
 
+    private function getStreamedContent($response): string
+    {
+        if (method_exists($response, 'streamedContent')) {
+            return (string) $response->streamedContent();
+        }
+
+        ob_start();
+        $response->sendContent();
+        return (string) (ob_get_clean() ?: '');
+    }
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -33,9 +44,7 @@ class VillageExportTest extends TestCase
         $response = $this->get(route('village.exportCsv'));
         $response->assertStatus(200);
         $this->assertTrue(str_contains($response->headers->get('Content-Type'), 'text/csv'));
-        ob_start();
-        $response->sendContent();
-        $csv = ob_get_clean();
+        $csv = $this->getStreamedContent($response);
         $this->assertStringContainsString('Nama Desa/Kelurahan', $csv);
     }
 
@@ -49,6 +58,19 @@ class VillageExportTest extends TestCase
         $response = $this->get(route('village.exportPdf'));
         $response->assertStatus(200);
         $response->assertHeader('Content-Type', 'application/pdf');
+    }
+
+    public function test_export_excel_returns_excel_response()
+    {
+        $province = Province::factory()->create();
+        $regency = Regency::factory()->create(['province_id' => $province->id]);
+        $subRegency = SubRegency::factory()->create(['regency_id' => $regency->id]);
+        Village::factory()->count(3)->create(['sub_regency_id' => $subRegency->id]);
+
+        $response = $this->get(route('village.exportExcel'));
+        $response->assertStatus(200);
+        $this->assertTrue(str_contains($response->headers->get('Content-Type'), 'application/vnd.ms-excel'));
+        $response->assertSee('Nama Desa/Kelurahan');
     }
 
     public function test_index_pagination_and_search_works()

@@ -8,6 +8,12 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="h3 mb-0">Data Ruang</h1>
         <div>
+            <a href="{{ route('ruang.exportExcel', request()->query()) }}" class="btn btn-success">
+                <i class="bi bi-file-earmark-excel"></i> Export Excel
+            </a>
+            <a href="{{ route('ruang.exportPdf', request()->query()) }}" class="btn btn-danger">
+                <i class="bi bi-file-earmark-pdf"></i> Export PDF
+            </a>
             <a href="{{ route('ruang.trash') }}" class="btn btn-secondary">
                 <i class="bi bi-trash"></i> Trash
             </a>

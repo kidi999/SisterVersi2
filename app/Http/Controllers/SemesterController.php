@@ -5,8 +5,10 @@ namespace App\Http\Controllers;
 use App\Models\Semester;
 use App\Models\TahunAkademik;
 use App\Models\ProgramStudi;
+use App\Support\TabularExport;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class SemesterController extends Controller
 {
@@ -30,13 +32,116 @@ class SemesterController extends Controller
         }
 
         $semesters = $query->orderBy('tahun_akademik_id', 'desc')
-                          ->orderBy('nomor_semester', 'desc')
-                          ->get();
+            ->orderBy('nomor_semester', 'desc')
+            ->paginate(25)
+            ->withQueryString();
 
         $tahunAkademiks = TahunAkademik::orderBy('tahun_mulai', 'desc')->get();
         $programStudis = ProgramStudi::with('fakultas')->orderBy('nama_prodi')->get();
 
         return view('semester.index', compact('semesters', 'tahunAkademiks', 'programStudis'));
+    }
+
+    public function exportExcel(Request $request)
+    {
+        $query = Semester::with(['tahunAkademik', 'programStudi.fakultas']);
+
+        if ($request->filled('tahun_akademik_id')) {
+            $query->where('tahun_akademik_id', $request->tahun_akademik_id);
+        }
+
+        if ($request->filled('program_studi_id')) {
+            $query->where('program_studi_id', $request->program_studi_id);
+        }
+
+        if ($request->filled('type') && $request->type == 'universitas') {
+            $query->whereNull('program_studi_id');
+        }
+
+        $items = $query->orderBy('tahun_akademik_id', 'desc')
+            ->orderBy('nomor_semester', 'desc')
+            ->get();
+
+        $rows = $items->map(function (Semester $semester, int $index) {
+            $prodi = $semester->program_studi_id ? ($semester->programStudi->nama_prodi ?? '-') : 'UNIVERSITAS';
+            $fakultas = $semester->program_studi_id && $semester->programStudi && $semester->programStudi->fakultas
+                ? ($semester->programStudi->fakultas->nama_fakultas ?? '-')
+                : '-';
+
+            $periode = '';
+            if ($semester->tanggal_mulai && $semester->tanggal_selesai) {
+                $periode = $semester->tanggal_mulai . ' - ' . $semester->tanggal_selesai;
+            }
+
+            return [
+                $index + 1,
+                $semester->tahunAkademik?->kode ?? '-',
+                $prodi,
+                $fakultas,
+                $semester->nama_semester,
+                (string) $semester->nomor_semester,
+                $periode,
+                $semester->is_active ? 'Aktif' : 'Nonaktif',
+            ];
+        });
+
+        $html = TabularExport::htmlTable(
+            ['No', 'Tahun Akademik', 'Program Studi', 'Fakultas', 'Nama Semester', 'Nomor', 'Periode', 'Status'],
+            $rows
+        );
+
+        return TabularExport::excelResponse('semester.xls', $html);
+    }
+
+    public function exportPdf(Request $request)
+    {
+        $query = Semester::with(['tahunAkademik', 'programStudi.fakultas']);
+
+        if ($request->filled('tahun_akademik_id')) {
+            $query->where('tahun_akademik_id', $request->tahun_akademik_id);
+        }
+
+        if ($request->filled('program_studi_id')) {
+            $query->where('program_studi_id', $request->program_studi_id);
+        }
+
+        if ($request->filled('type') && $request->type == 'universitas') {
+            $query->whereNull('program_studi_id');
+        }
+
+        $items = $query->orderBy('tahun_akademik_id', 'desc')
+            ->orderBy('nomor_semester', 'desc')
+            ->get();
+
+        $rows = $items->map(function (Semester $semester, int $index) {
+            $prodi = $semester->program_studi_id ? ($semester->programStudi->nama_prodi ?? '-') : 'UNIVERSITAS';
+            $fakultas = $semester->program_studi_id && $semester->programStudi && $semester->programStudi->fakultas
+                ? ($semester->programStudi->fakultas->nama_fakultas ?? '-')
+                : '-';
+
+            $periode = '';
+            if ($semester->tanggal_mulai && $semester->tanggal_selesai) {
+                $periode = $semester->tanggal_mulai . ' - ' . $semester->tanggal_selesai;
+            }
+
+            return [
+                $index + 1,
+                $semester->tahunAkademik?->kode ?? '-',
+                $prodi,
+                $fakultas,
+                $semester->nama_semester,
+                (string) $semester->nomor_semester,
+                $periode,
+                $semester->is_active ? 'Aktif' : 'Nonaktif',
+            ];
+        });
+
+        $html = TabularExport::htmlTable(
+            ['No', 'Tahun Akademik', 'Program Studi', 'Fakultas', 'Nama Semester', 'Nomor', 'Periode', 'Status'],
+            $rows
+        );
+
+        return Pdf::loadHTML($html)->download('semester.pdf');
     }
 
     public function create(Request $request)

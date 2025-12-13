@@ -199,7 +199,7 @@
         </div>
 
         <!-- File Lampiran -->
-        <div class="card mb-4">
+        <div class="card mb-4" id="fileUploadSection">
             <div class="card-header bg-warning text-dark">
                 <h5 class="mb-0"><i class="bi bi-paperclip"></i> File Lampiran</h5>
             </div>

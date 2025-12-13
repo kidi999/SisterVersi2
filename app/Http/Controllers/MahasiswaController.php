@@ -4,7 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\Mahasiswa;
 use App\Models\ProgramStudi;
+use App\Models\FileUpload;
+use App\Support\TabularExport;
 use Illuminate\Http\Request;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class MahasiswaController extends Controller
 {
@@ -20,8 +23,80 @@ class MahasiswaController extends Controller
             });
         }
         
-        $mahasiswa = $query->paginate(20);
+        $mahasiswa = $query->paginate(20)->withQueryString();
         return view('mahasiswa.index', compact('mahasiswa'));
+    }
+
+    public function exportExcel(Request $request)
+    {
+        $query = Mahasiswa::with(['programStudi.fakultas', 'user']);
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('nim', 'like', "%{$search}%")
+                    ->orWhere('nama_mahasiswa', 'like', "%{$search}%");
+            });
+        }
+
+        $items = $query->orderBy('nama_mahasiswa')->get();
+
+        $rows = $items->map(function (Mahasiswa $mhs, int $index) {
+            return [
+                $index + 1,
+                $mhs->nim,
+                $mhs->nama_mahasiswa,
+                $mhs->programStudi?->nama_prodi ?? '-',
+                $mhs->programStudi?->fakultas?->nama_fakultas ?? '-',
+                (string) $mhs->semester,
+                (string) $mhs->ipk,
+                $mhs->status,
+                $mhs->user ? 'Terhubung' : 'Belum',
+            ];
+        });
+
+        $html = TabularExport::htmlTable(
+            ['No', 'NIM', 'Nama', 'Program Studi', 'Fakultas', 'Semester', 'IPK', 'Status', 'Akun User'],
+            $rows
+        );
+
+        return TabularExport::excelResponse('mahasiswa.xls', $html);
+    }
+
+    public function exportPdf(Request $request)
+    {
+        $query = Mahasiswa::with(['programStudi.fakultas', 'user']);
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('nim', 'like', "%{$search}%")
+                    ->orWhere('nama_mahasiswa', 'like', "%{$search}%");
+            });
+        }
+
+        $items = $query->orderBy('nama_mahasiswa')->get();
+
+        $rows = $items->map(function (Mahasiswa $mhs, int $index) {
+            return [
+                $index + 1,
+                $mhs->nim,
+                $mhs->nama_mahasiswa,
+                $mhs->programStudi?->nama_prodi ?? '-',
+                $mhs->programStudi?->fakultas?->nama_fakultas ?? '-',
+                (string) $mhs->semester,
+                (string) $mhs->ipk,
+                $mhs->status,
+                $mhs->user ? 'Terhubung' : 'Belum',
+            ];
+        });
+
+        $html = TabularExport::htmlTable(
+            ['No', 'NIM', 'Nama', 'Program Studi', 'Fakultas', 'Semester', 'IPK', 'Status', 'Akun User'],
+            $rows
+        );
+
+        return Pdf::loadHTML($html)->download('mahasiswa.pdf');
     }
 
     public function create()
@@ -44,21 +119,37 @@ class MahasiswaController extends Controller
             'email' => 'required|email|unique:mahasiswa|max:100',
             'tahun_masuk' => 'required|digits:4',
             'nama_wali' => 'nullable|max:100',
-            'telepon_wali' => 'nullable|max:20'
+            'telepon_wali' => 'nullable|max:20',
+            'file_ids' => 'nullable|array',
+            'file_ids.*' => 'exists:file_uploads,id',
         ]);
 
-        Mahasiswa::create($validated);
+        $mahasiswa = Mahasiswa::create(collect($validated)->except('file_ids')->toArray());
+
+        if ($request->filled('file_ids') && is_array($request->file_ids)) {
+            FileUpload::whereIn('id', $request->file_ids)
+                ->where(function ($query) {
+                    $query->whereNull('fileable_id')
+                        ->orWhere('fileable_id', 0);
+                })
+                ->update([
+                    'fileable_id' => $mahasiswa->id,
+                    'fileable_type' => Mahasiswa::class,
+                ]);
+        }
+
         return redirect()->route('mahasiswa.index')->with('success', 'Data mahasiswa berhasil ditambahkan');
     }
 
     public function show(Mahasiswa $mahasiswa)
     {
-        $mahasiswa->load(['programStudi.fakultas', 'krs.kelas.mataKuliah', 'krs.nilai', 'user.role']);
+        $mahasiswa->load(['programStudi.fakultas', 'krs.kelas.mataKuliah', 'krs.nilai', 'user.role', 'files']);
         return view('mahasiswa.show', compact('mahasiswa'));
     }
 
     public function edit(Mahasiswa $mahasiswa)
     {
+        $mahasiswa->load('files');
         $programStudi = ProgramStudi::all();
         return view('mahasiswa.edit', compact('mahasiswa', 'programStudi'));
     }
@@ -79,10 +170,29 @@ class MahasiswaController extends Controller
             'semester' => 'required|integer|min:1|max:14',
             'status' => 'required|in:Aktif,Cuti,Lulus,DO,Mengundurkan Diri',
             'nama_wali' => 'nullable|max:100',
-            'telepon_wali' => 'nullable|max:20'
+            'telepon_wali' => 'nullable|max:20',
+            'file_ids' => 'nullable|array',
+            'file_ids.*' => 'exists:file_uploads,id',
         ]);
 
-        $mahasiswa->update($validated);
+        $mahasiswa->update(collect($validated)->except('file_ids')->toArray());
+
+        if ($request->has('file_ids') && is_array($request->file_ids)) {
+            FileUpload::whereIn('id', $request->file_ids)
+                ->where(function ($query) use ($mahasiswa) {
+                    $query->whereNull('fileable_id')
+                        ->orWhere('fileable_id', 0)
+                        ->orWhere(function ($q) use ($mahasiswa) {
+                            $q->where('fileable_type', Mahasiswa::class)
+                                ->where('fileable_id', $mahasiswa->id);
+                        });
+                })
+                ->update([
+                    'fileable_id' => $mahasiswa->id,
+                    'fileable_type' => Mahasiswa::class,
+                ]);
+        }
+
         return redirect()->route('mahasiswa.index')->with('success', 'Data mahasiswa berhasil diperbarui');
     }
 

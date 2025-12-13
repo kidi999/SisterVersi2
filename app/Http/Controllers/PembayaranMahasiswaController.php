@@ -4,6 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\PembayaranMahasiswa;
 use App\Models\TagihanMahasiswa;
+use App\Models\FileUpload;
+use App\Support\TabularExport;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
@@ -11,10 +14,7 @@ use Illuminate\Support\Facades\Storage;
 
 class PembayaranMahasiswaController extends Controller
 {
-    /**
-     * Display a listing of pembayaran (for admin)
-     */
-    public function index(Request $request)
+    private function filteredQuery(Request $request)
     {
         $query = PembayaranMahasiswa::with([
             'mahasiswa.programStudi.fakultas',
@@ -25,12 +25,12 @@ class PembayaranMahasiswaController extends Controller
         // Filter by search
         if ($request->filled('search')) {
             $search = $request->search;
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('nomor_pembayaran', 'like', "%{$search}%")
-                  ->orWhereHas('mahasiswa', function($q2) use ($search) {
-                      $q2->where('nim', 'like', "%{$search}%")
-                         ->orWhere('nama_mahasiswa', 'like', "%{$search}%");
-                  });
+                    ->orWhereHas('mahasiswa', function ($q2) use ($search) {
+                        $q2->where('nim', 'like', "%{$search}%")
+                            ->orWhere('nama_mahasiswa', 'like', "%{$search}%");
+                    });
             });
         }
 
@@ -50,18 +50,113 @@ class PembayaranMahasiswaController extends Controller
         // Filter by user role
         $user = Auth::user();
         if ($user->role->name === 'admin_fakultas') {
-            $query->whereHas('mahasiswa.programStudi', function($q) use ($user) {
+            $query->whereHas('mahasiswa.programStudi', function ($q) use ($user) {
                 $q->where('fakultas_id', $user->fakultas_id);
             });
         } elseif ($user->role->name === 'admin_prodi') {
-            $query->whereHas('mahasiswa', function($q) use ($user) {
+            $query->whereHas('mahasiswa', function ($q) use ($user) {
                 $q->where('program_studi_id', $user->program_studi_id);
             });
         }
 
-        $pembayaran = $query->orderBy('created_at', 'desc')->paginate(20);
+        return $query;
+    }
+
+    /**
+     * Display a listing of pembayaran (for admin)
+     */
+    public function index(Request $request)
+    {
+        $pembayaran = $this->filteredQuery($request)
+            ->orderBy('created_at', 'desc')
+            ->paginate(20)
+            ->withQueryString();
 
         return view('pembayaran-mahasiswa.index', compact('pembayaran'));
+    }
+
+    public function exportExcel(Request $request)
+    {
+        $items = $this->filteredQuery($request)->orderBy('created_at', 'desc')->get();
+
+        $headers = [
+            'No. Pembayaran',
+            'Tanggal Bayar',
+            'NIM',
+            'Nama Mahasiswa',
+            'Program Studi',
+            'Fakultas',
+            'No. Tagihan',
+            'Jenis Pembayaran',
+            'Jumlah Bayar',
+            'Metode Pembayaran',
+            'Status Verifikasi',
+            'Verified By',
+            'Verified At',
+        ];
+
+        $rows = $items->map(function ($p) {
+            return [
+                $p->nomor_pembayaran,
+                optional($p->tanggal_bayar)->format('d/m/Y'),
+                $p->mahasiswa->nim ?? '-',
+                $p->mahasiswa->nama_mahasiswa ?? '-',
+                $p->mahasiswa->programStudi->nama_prodi ?? '-',
+                $p->mahasiswa->programStudi->fakultas->nama_fakultas ?? '-',
+                $p->tagihanMahasiswa->nomor_tagihan ?? '-',
+                $p->tagihanMahasiswa->jenisPembayaran->nama ?? '-',
+                $p->jumlah_bayar,
+                $p->metode_pembayaran,
+                $p->status_verifikasi,
+                $p->verifiedBy->name ?? '-',
+                optional($p->verified_at)->format('d/m/Y H:i'),
+            ];
+        });
+
+        $html = TabularExport::htmlTable($headers, $rows);
+        return TabularExport::excelResponse('pembayaran_mahasiswa.xls', $html);
+    }
+
+    public function exportPdf(Request $request)
+    {
+        $items = $this->filteredQuery($request)->orderBy('created_at', 'desc')->get();
+
+        $headers = [
+            'No. Pembayaran',
+            'Tanggal Bayar',
+            'NIM',
+            'Nama Mahasiswa',
+            'Program Studi',
+            'Fakultas',
+            'No. Tagihan',
+            'Jenis Pembayaran',
+            'Jumlah Bayar',
+            'Metode Pembayaran',
+            'Status Verifikasi',
+            'Verified By',
+            'Verified At',
+        ];
+
+        $rows = $items->map(function ($p) {
+            return [
+                $p->nomor_pembayaran,
+                optional($p->tanggal_bayar)->format('d/m/Y'),
+                $p->mahasiswa->nim ?? '-',
+                $p->mahasiswa->nama_mahasiswa ?? '-',
+                $p->mahasiswa->programStudi->nama_prodi ?? '-',
+                $p->mahasiswa->programStudi->fakultas->nama_fakultas ?? '-',
+                $p->tagihanMahasiswa->nomor_tagihan ?? '-',
+                $p->tagihanMahasiswa->jenisPembayaran->nama ?? '-',
+                $p->jumlah_bayar,
+                $p->metode_pembayaran,
+                $p->status_verifikasi,
+                $p->verifiedBy->name ?? '-',
+                optional($p->verified_at)->format('d/m/Y H:i'),
+            ];
+        });
+
+        $html = TabularExport::htmlTable($headers, $rows);
+        return Pdf::loadHTML($html)->download('pembayaran_mahasiswa.pdf');
     }
 
     /**
@@ -72,6 +167,8 @@ class PembayaranMahasiswaController extends Controller
         $tagihanId = $request->tagihan_id;
         $tagihan = null;
 
+        $tagihanOptions = collect();
+
         if ($tagihanId) {
             $tagihan = TagihanMahasiswa::with([
                 'mahasiswa.programStudi',
@@ -79,9 +176,31 @@ class PembayaranMahasiswaController extends Controller
                 'tahunAkademik',
                 'semester'
             ])->findOrFail($tagihanId);
+        } else {
+            $query = TagihanMahasiswa::with([
+                'mahasiswa.programStudi.fakultas',
+                'jenisPembayaran',
+                'tahunAkademik',
+                'semester'
+            ])
+                ->where('sisa_tagihan', '>', 0)
+                ->orderBy('created_at', 'desc');
+
+            $user = Auth::user();
+            if ($user->role->name === 'admin_fakultas') {
+                $query->whereHas('mahasiswa.programStudi', function ($q) use ($user) {
+                    $q->where('fakultas_id', $user->fakultas_id);
+                });
+            } elseif ($user->role->name === 'admin_prodi') {
+                $query->whereHas('mahasiswa', function ($q) use ($user) {
+                    $q->where('program_studi_id', $user->program_studi_id);
+                });
+            }
+
+            $tagihanOptions = $query->limit(200)->get();
         }
 
-        return view('pembayaran-mahasiswa.create', compact('tagihan'));
+        return view('pembayaran-mahasiswa.create', compact('tagihan', 'tagihanOptions'));
     }
 
     /**
@@ -101,6 +220,8 @@ class PembayaranMahasiswaController extends Controller
             'nomor_referensi' => 'nullable|string|max:100',
             'bukti_pembayaran' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
             'keterangan' => 'nullable|string',
+            'file_ids' => 'nullable|array',
+            'file_ids.*' => 'exists:file_uploads,id',
         ]);
 
         $tagihan = TagihanMahasiswa::findOrFail($validated['tagihan_mahasiswa_id']);
@@ -130,6 +251,14 @@ class PembayaranMahasiswaController extends Controller
 
             $pembayaran = PembayaranMahasiswa::create($validated);
 
+            if ($request->filled('file_ids') && is_array($request->file_ids)) {
+                FileUpload::whereIn('id', $request->file_ids)
+                    ->update([
+                        'fileable_type' => PembayaranMahasiswa::class,
+                        'fileable_id' => $pembayaran->id,
+                    ]);
+            }
+
             // Update tagihan
             $tagihan->jumlah_dibayar += $validated['jumlah_bayar'];
             $tagihan->updated_by = Auth::user()->name;
@@ -155,7 +284,8 @@ class PembayaranMahasiswaController extends Controller
             'tagihanMahasiswa.jenisPembayaran',
             'tagihanMahasiswa.tahunAkademik',
             'tagihanMahasiswa.semester',
-            'verifiedBy'
+            'verifiedBy',
+            'files',
         ]);
 
         return view('pembayaran-mahasiswa.show', compact('pembayaranMahasiswa'));

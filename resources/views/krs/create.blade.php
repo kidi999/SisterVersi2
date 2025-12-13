@@ -104,6 +104,13 @@
                             </table>
                         </div>
 
+                        @include('components.file-upload', [
+                            'existingFiles' => collect(),
+                            'fileableType' => \App\Models\Krs::class,
+                            'fileableId' => 0,
+                            'maxFiles' => 10,
+                        ])
+
                         @if($kelasList->count() > 0)
                         <div class="d-grid gap-2 mt-4">
                             <button type="submit" class="btn btn-primary btn-lg">

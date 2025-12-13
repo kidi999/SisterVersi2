@@ -4,6 +4,14 @@
 @section('header', 'Dashboard Mahasiswa')
 
 @section('content')
+<div class="d-flex justify-content-end mb-3">
+    <a href="{{ route('dashboard.exportExcel') }}" class="btn btn-success btn-sm me-2">
+        <i class="bi bi-file-earmark-excel"></i> Export Excel
+    </a>
+    <a href="{{ route('dashboard.exportPdf') }}" class="btn btn-danger btn-sm">
+        <i class="bi bi-file-earmark-pdf"></i> Export PDF
+    </a>
+</div>
 <!-- Welcome Card -->
 <div class="row mb-4">
     <div class="col-md-12">

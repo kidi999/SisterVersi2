@@ -16,14 +16,15 @@
             <a href="{{ route('provinsi.create') }}" class="btn btn-primary btn-sm">
                 <i class="bi bi-plus-circle"></i> Tambah Provinsi
             </a>
+            <a href="{{ route('provinsi.exportExcel', ['search' => request('search')]) }}" class="btn btn-success btn-sm">
+                <i class="bi bi-file-earmark-excel"></i> Export Excel
+            </a>
             <a href="{{ route('provinsi.exportCsv', ['search' => request('search')]) }}" class="btn btn-success btn-sm">
                 <i class="bi bi-file-earmark-excel"></i> Export CSV
             </a>
-            <!--
-            <a href="#" class="btn btn-danger btn-sm disabled" tabindex="-1" aria-disabled="true">
+            <a href="{{ route('provinsi.exportPdf', ['search' => request('search')]) }}" class="btn btn-danger btn-sm">
                 <i class="bi bi-file-earmark-pdf"></i> Export PDF
             </a>
-            -->
         </div>
     </div>
     <div class="card-body">

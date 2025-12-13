@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Http\Controllers;
+use App\Models\SubRegency;
 use App\Models\Regency;
 use App\Models\Province;
 use Illuminate\Http\Request;
@@ -8,6 +9,54 @@ use Illuminate\Support\Facades\Auth;
 
 class SubRegencyController extends Controller
 {
+    /**
+     * Export data kecamatan ke Excel (.xls - HTML table)
+     */
+    public function exportExcel(Request $request)
+    {
+        $query = SubRegency::with('regency.province')->orderBy('name');
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->where('name', 'like', "%$search%")
+                ->orWhere('code', 'like', "%$search%")
+                ->orWhereHas('regency', function ($q) use ($search) {
+                    $q->where('name', 'like', "%$search%")
+                        ->orWhereHas('province', function ($qq) use ($search) {
+                            $qq->where('name', 'like', "%$search%");
+                        });
+                });
+        }
+        $subRegencies = $query->get();
+
+        $filename = 'sub_regencies_' . now()->format('Ymd_His') . '.xls';
+        $headers = [
+            'Content-Type' => 'application/vnd.ms-excel; charset=UTF-8',
+            'Content-Disposition' => "attachment; filename=\"$filename\"",
+            'Cache-Control' => 'max-age=0',
+        ];
+
+        $bom = "\xEF\xBB\xBF";
+        $html = '<html><head><meta charset="UTF-8"></head><body>'
+            . '<table border="1" cellspacing="0" cellpadding="4">'
+            . '<thead><tr>'
+            . '<th>No</th><th>Kode</th><th>Nama Kecamatan</th><th>Kabupaten/Kota</th><th>Provinsi</th>'
+            . '</tr></thead><tbody>';
+
+        foreach ($subRegencies as $i => $sub) {
+            $html .= '<tr>'
+                . '<td>' . e((string) ($i + 1)) . '</td>'
+                . '<td>' . e((string) $sub->code) . '</td>'
+                . '<td>' . e((string) $sub->name) . '</td>'
+                . '<td>' . e((string) ($sub->regency ? $sub->regency->name : '')) . '</td>'
+                . '<td>' . e((string) ($sub->regency && $sub->regency->province ? $sub->regency->province->name : '')) . '</td>'
+                . '</tr>';
+        }
+
+        $html .= '</tbody></table></body></html>';
+
+        return response($bom . $html, 200, $headers);
+    }
+
     /**
      * Export data kecamatan ke CSV
      */

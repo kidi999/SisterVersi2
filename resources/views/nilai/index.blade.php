@@ -4,11 +4,19 @@
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="h3 mb-0">Nilai Mahasiswa</h1>
-        @if(in_array(Auth::user()->role->name, ['dosen', 'admin_prodi', 'admin_fakultas', 'admin_universitas', 'super_admin']))
-        <a href="{{ route('nilai.create') }}" class="btn btn-primary">
-            <i class="bi bi-plus-circle"></i> Input Nilai
-        </a>
-        @endif
+        <div>
+            <a href="{{ route('nilai.exportExcel', request()->query()) }}" class="btn btn-success me-2">
+                <i class="bi bi-file-earmark-excel"></i> Export Excel
+            </a>
+            <a href="{{ route('nilai.exportPdf', request()->query()) }}" class="btn btn-danger me-2">
+                <i class="bi bi-file-earmark-pdf"></i> Export PDF
+            </a>
+            @if(in_array(Auth::user()->role->name, ['dosen', 'admin_prodi', 'admin_fakultas', 'admin_universitas', 'super_admin']))
+            <a href="{{ route('nilai.create') }}" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> Input Nilai
+            </a>
+            @endif
+        </div>
     </div>
 
     @if(session('success'))

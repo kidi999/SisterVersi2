@@ -86,6 +86,12 @@
                             @enderror
                         </div>
 
+                        @include('components.file-upload', [
+                            'existingFiles' => $nilai->files ?? collect(),
+                            'fileableType' => \App\Models\Nilai::class,
+                            'fileableId' => $nilai->id,
+                        ])
+
                         <div class="d-grid gap-2 mt-4">
                             <button type="submit" class="btn btn-primary">
                                 <i class="bi bi-save"></i> Update Nilai

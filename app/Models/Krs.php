@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOneThrough;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Traits\AuditableTrait;
 
@@ -84,5 +85,10 @@ class Krs extends Model
     public function absensiMahasiswa(): HasMany
     {
         return $this->hasMany(AbsensiMahasiswa::class, 'krs_id');
+    }
+
+    public function files(): MorphMany
+    {
+        return $this->morphMany(FileUpload::class, 'fileable');
     }
 }

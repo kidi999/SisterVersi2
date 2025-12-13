@@ -5,15 +5,86 @@ namespace App\Http\Controllers;
 use App\Models\Fakultas;
 use App\Models\Province;
 use App\Models\FileUpload;
+use App\Support\TabularExport;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class FakultasController extends Controller
 {
     public function index()
     {
-        $fakultas = Fakultas::with(['programStudi', 'village.subRegency.regency.province'])->get();
+        $fakultas = Fakultas::with(['village.subRegency.regency.province'])
+            ->withCount('programStudi')
+            ->orderBy('nama_fakultas')
+            ->paginate(20)
+            ->withQueryString();
+
         return view('fakultas.index', compact('fakultas'));
+    }
+
+    public function exportExcel(Request $request)
+    {
+        $items = Fakultas::with(['village.subRegency.regency.province'])
+            ->withCount('programStudi')
+            ->orderBy('nama_fakultas')
+            ->get();
+
+        $rows = $items->map(function (Fakultas $item, int $index) {
+            $wilayah = '-';
+            if ($item->village && $item->village->subRegency && $item->village->subRegency->regency && $item->village->subRegency->regency->province) {
+                $wilayah = trim($item->village->name . ', ' . $item->village->subRegency->name . ', ' . $item->village->subRegency->regency->name . ', ' . $item->village->subRegency->regency->province->name);
+            }
+
+            return [
+                $index + 1,
+                $item->kode_fakultas,
+                $item->nama_fakultas,
+                $item->singkatan,
+                $item->dekan ?? '-',
+                $wilayah,
+                (string) $item->program_studi_count,
+            ];
+        });
+
+        $html = TabularExport::htmlTable(
+            ['No', 'Kode', 'Nama Fakultas', 'Singkatan', 'Dekan', 'Wilayah', 'Jumlah Prodi'],
+            $rows
+        );
+
+        return TabularExport::excelResponse('fakultas.xls', $html);
+    }
+
+    public function exportPdf(Request $request)
+    {
+        $items = Fakultas::with(['village.subRegency.regency.province'])
+            ->withCount('programStudi')
+            ->orderBy('nama_fakultas')
+            ->get();
+
+        $rows = $items->map(function (Fakultas $item, int $index) {
+            $wilayah = '-';
+            if ($item->village && $item->village->subRegency && $item->village->subRegency->regency && $item->village->subRegency->regency->province) {
+                $wilayah = trim($item->village->name . ', ' . $item->village->subRegency->name . ', ' . $item->village->subRegency->regency->name . ', ' . $item->village->subRegency->regency->province->name);
+            }
+
+            return [
+                $index + 1,
+                $item->kode_fakultas,
+                $item->nama_fakultas,
+                $item->singkatan,
+                $item->dekan ?? '-',
+                $wilayah,
+                (string) $item->program_studi_count,
+            ];
+        });
+
+        $html = TabularExport::htmlTable(
+            ['No', 'Kode', 'Nama Fakultas', 'Singkatan', 'Dekan', 'Wilayah', 'Jumlah Prodi'],
+            $rows
+        );
+
+        return Pdf::loadHTML($html)->download('fakultas.pdf');
     }
 
     public function trash()

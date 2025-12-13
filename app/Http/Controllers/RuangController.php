@@ -6,6 +6,8 @@ use App\Models\Ruang;
 use App\Models\Fakultas;
 use App\Models\ProgramStudi;
 use App\Models\FileUpload;
+use App\Support\TabularExport;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -60,11 +62,136 @@ class RuangController extends Controller
             });
         }
 
-        $ruang = $query->latest()->paginate(20);
+        $ruang = $query->latest()->paginate(20)->withQueryString();
         $fakultas = Fakultas::orderBy('nama_fakultas')->get();
         $programStudi = ProgramStudi::with('fakultas')->orderBy('nama_prodi')->get();
 
         return view('ruang.index', compact('ruang', 'fakultas', 'programStudi'));
+    }
+
+    public function exportExcel(Request $request)
+    {
+        $query = Ruang::with(['fakultas', 'programStudi']);
+
+        if ($request->filled('tingkat_kepemilikan')) {
+            $query->where('tingkat_kepemilikan', $request->tingkat_kepemilikan);
+        }
+
+        if ($request->filled('jenis_ruang')) {
+            $query->where('jenis_ruang', $request->jenis_ruang);
+        }
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->filled('fakultas_id')) {
+            $query->where(function ($q) use ($request) {
+                $q->where('fakultas_id', $request->fakultas_id)
+                    ->orWhere('tingkat_kepemilikan', 'Universitas');
+            });
+        }
+
+        if ($request->filled('program_studi_id')) {
+            $prodi = ProgramStudi::find($request->program_studi_id);
+            if ($prodi) {
+                $query->accessibleByProdi($request->program_studi_id, $prodi->fakultas_id);
+            }
+        }
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('kode_ruang', 'like', "%{$search}%")
+                    ->orWhere('nama_ruang', 'like', "%{$search}%")
+                    ->orWhere('gedung', 'like', "%{$search}%");
+            });
+        }
+
+        $ruang = $query->latest()->get();
+
+        $headers = ['Kode', 'Nama Ruang', 'Gedung', 'Lantai', 'Jenis', 'Kapasitas', 'Kepemilikan', 'Fakultas', 'Program Studi', 'Status'];
+        $rows = $ruang->map(function (Ruang $item) {
+            return [
+                $item->kode_ruang,
+                $item->nama_ruang,
+                $item->gedung ?? '-',
+                $item->lantai ?? '-',
+                $item->jenis_ruang,
+                (string) $item->kapasitas,
+                $item->tingkat_kepemilikan,
+                $item->fakultas?->nama_fakultas ?? '-',
+                $item->programStudi?->nama_prodi ?? '-',
+                $item->status,
+            ];
+        })->toArray();
+
+        $html = TabularExport::htmlTable($headers, $rows);
+        return TabularExport::excelResponse('ruang.xls', $html);
+    }
+
+    public function exportPdf(Request $request)
+    {
+        $query = Ruang::with(['fakultas', 'programStudi']);
+
+        if ($request->filled('tingkat_kepemilikan')) {
+            $query->where('tingkat_kepemilikan', $request->tingkat_kepemilikan);
+        }
+
+        if ($request->filled('jenis_ruang')) {
+            $query->where('jenis_ruang', $request->jenis_ruang);
+        }
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->filled('fakultas_id')) {
+            $query->where(function ($q) use ($request) {
+                $q->where('fakultas_id', $request->fakultas_id)
+                    ->orWhere('tingkat_kepemilikan', 'Universitas');
+            });
+        }
+
+        if ($request->filled('program_studi_id')) {
+            $prodi = ProgramStudi::find($request->program_studi_id);
+            if ($prodi) {
+                $query->accessibleByProdi($request->program_studi_id, $prodi->fakultas_id);
+            }
+        }
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('kode_ruang', 'like', "%{$search}%")
+                    ->orWhere('nama_ruang', 'like', "%{$search}%")
+                    ->orWhere('gedung', 'like', "%{$search}%");
+            });
+        }
+
+        $ruang = $query->latest()->get();
+
+        $headers = ['Kode', 'Nama Ruang', 'Gedung', 'Lantai', 'Jenis', 'Kapasitas', 'Kepemilikan', 'Fakultas', 'Program Studi', 'Status'];
+        $rows = $ruang->map(function (Ruang $item) {
+            return [
+                $item->kode_ruang,
+                $item->nama_ruang,
+                $item->gedung ?? '-',
+                $item->lantai ?? '-',
+                $item->jenis_ruang,
+                (string) $item->kapasitas,
+                $item->tingkat_kepemilikan,
+                $item->fakultas?->nama_fakultas ?? '-',
+                $item->programStudi?->nama_prodi ?? '-',
+                $item->status,
+            ];
+        })->toArray();
+
+        $html = TabularExport::htmlTable($headers, $rows);
+
+        return Pdf::loadHTML($html)
+            ->setPaper('A4', 'landscape')
+            ->download('ruang.pdf');
     }
 
     /**

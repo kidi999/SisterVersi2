@@ -12,6 +12,12 @@
                 <p class="text-muted mb-0">NIM: {{ $mahasiswa->nim }}</p>
             </div>
             <div>
+                <a href="{{ route('profil-mahasiswa.exportExcel') }}" class="btn btn-success me-2">
+                    <i class="bi bi-file-earmark-excel"></i> Export Excel
+                </a>
+                <a href="{{ route('profil-mahasiswa.exportPdf') }}" class="btn btn-danger me-2">
+                    <i class="bi bi-file-earmark-pdf"></i> Export PDF
+                </a>
                 <a href="{{ route('profil-mahasiswa.edit') }}" class="btn btn-primary">
                     <i class="bi bi-pencil"></i> Edit Profil
                 </a>
@@ -200,6 +206,53 @@
                 <a href="{{ route('profil-mahasiswa.edit-password') }}" class="btn btn-info">
                     <i class="bi bi-key"></i> Ubah Password
                 </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12 mb-4">
+        <div class="card">
+            <div class="card-header bg-light">
+                <h5 class="mb-0"><i class="bi bi-paperclip"></i> Lampiran</h5>
+            </div>
+            <div class="card-body">
+                @if($mahasiswa->files && $mahasiswa->files->count() > 0)
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Nama File</th>
+                                    <th>Ukuran</th>
+                                    <th>Diupload</th>
+                                    <th class="text-end">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($mahasiswa->files as $file)
+                                    <tr>
+                                        <td>
+                                            <i class="bi {{ $file->icon_class }} me-1"></i>
+                                            {{ $file->file_name }}
+                                        </td>
+                                        <td>{{ $file->formatted_size }}</td>
+                                        <td>{{ optional($file->created_at)->format('d/m/Y H:i') }}</td>
+                                        <td class="text-end">
+                                            <a href="{{ route('api.file-upload.download', $file->id) }}" class="btn btn-sm btn-outline-primary">
+                                                <i class="bi bi-download"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                @else
+                    <div class="alert alert-info mb-0">
+                        <i class="bi bi-info-circle"></i> Belum ada lampiran.
+                    </div>
+                @endif
             </div>
         </div>
     </div>

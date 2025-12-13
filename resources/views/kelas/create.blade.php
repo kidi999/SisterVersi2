@@ -124,6 +124,12 @@
                             <small class="text-muted">Maksimal 100 mahasiswa per kelas</small>
                         </div>
 
+                        @include('components.file-upload', [
+                            'existingFiles' => [],
+                            'fileableType' => \App\Models\Kelas::class,
+                            'fileableId' => 0,
+                        ])
+
                         <div class="d-flex justify-content-end gap-2">
                             <a href="{{ route('kelas.index') }}" class="btn btn-secondary">
                                 <i class="bi bi-arrow-left"></i> Kembali

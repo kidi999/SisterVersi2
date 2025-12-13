@@ -6,9 +6,17 @@
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="h3 mb-0">Tahun Akademik</h1>
-        <a href="{{ route('tahun-akademik.create') }}" class="btn btn-primary">
-            <i class="bi bi-plus-circle"></i> Tambah Tahun Akademik
-        </a>
+        <div class="d-flex gap-2">
+            <a href="{{ route('tahun-akademik.exportExcel') }}" class="btn btn-success">
+                <i class="bi bi-file-earmark-excel"></i> Export Excel
+            </a>
+            <a href="{{ route('tahun-akademik.exportPdf') }}" class="btn btn-danger">
+                <i class="bi bi-file-earmark-pdf"></i> Export PDF
+            </a>
+            <a href="{{ route('tahun-akademik.create') }}" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> Tambah Tahun Akademik
+            </a>
+        </div>
     </div>
 
     @if(session('success'))
@@ -43,7 +51,7 @@
                     <tbody>
                         @forelse($tahunAkademiks as $index => $ta)
                         <tr>
-                            <td>{{ $index + 1 }}</td>
+                            <td>{{ ($tahunAkademiks->firstItem() ?? 0) + $index }}</td>
                             <td><strong>{{ $ta->kode }}</strong></td>
                             <td>{{ $ta->nama }}</td>
                             <td>
@@ -106,82 +114,81 @@
                     </tbody>
                 </table>
             </div>
+
+            <div class="d-flex justify-content-center mt-3">
+                {{ $tahunAkademiks->links() }}
+            </div>
         </div>
     </div>
 </div>
 @endsection
 
 @push('styles')
-<link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
 @endpush
 
 @push('scripts')
-<script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
-$(document).ready(function() {
-    // Initialize DataTable
-    @if($tahunAkademiks->isNotEmpty())
-    $('#tahunAkademikTable').DataTable({
-        language: {
-            url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/id.json',
-        },
-        order: [[3, 'desc']], // Sort by periode (tahun mulai) descending
-        pageLength: 25
-    });
-    @endif
+// Toggle Active Status
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.toggle-active').forEach(function (checkbox) {
+        checkbox.addEventListener('change', function () {
+            const tahunAkademikId = checkbox.dataset.id;
+            const isActive = checkbox.checked;
 
-    // Toggle Active Status
-    $('.toggle-active').on('change', function() {
-        const checkbox = $(this);
-        const tahunAkademikId = checkbox.data('id');
-        const isActive = checkbox.is(':checked');
-        
-        Swal.fire({
-            title: 'Konfirmasi',
-            text: isActive ? 
-                  'Mengaktifkan tahun akademik ini akan menonaktifkan tahun akademik yang lain. Lanjutkan?' : 
-                  'Yakin ingin menonaktifkan tahun akademik ini?',
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#3085d6',
-            cancelButtonColor: '#d33',
-            confirmButtonText: 'Ya, Lanjutkan',
-            cancelButtonText: 'Batal'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                $.ajax({
-                    url: '/tahun-akademik/' + tahunAkademikId + '/toggle-active',
-                    type: 'POST',
-                    data: {
-                        _token: '{{ csrf_token() }}'
+            Swal.fire({
+                title: 'Konfirmasi',
+                text: isActive
+                    ? 'Mengaktifkan tahun akademik ini akan menonaktifkan tahun akademik yang lain. Lanjutkan?'
+                    : 'Yakin ingin menonaktifkan tahun akademik ini?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Ya, Lanjutkan',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (!result.isConfirmed) {
+                    checkbox.checked = !isActive;
+                    return;
+                }
+
+                fetch('/tahun-akademik/' + tahunAkademikId + '/toggle-active', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'X-Requested-With': 'XMLHttpRequest'
                     },
-                    success: function(response) {
-                        Swal.fire({
-                            title: 'Berhasil!',
-                            text: response.message,
-                            icon: 'success',
-                            timer: 2000,
-                            showConfirmButton: false
-                        }).then(() => {
-                            location.reload();
-                        });
-                    },
-                    error: function(xhr) {
-                        checkbox.prop('checked', !isActive);
-                        Swal.fire({
-                            title: 'Error!',
-                            text: xhr.responseJSON?.message || 'Terjadi kesalahan',
-                            icon: 'error'
-                        });
+                    body: JSON.stringify({})
+                })
+                .then(async (res) => {
+                    if (!res.ok) {
+                        const data = await res.json().catch(() => null);
+                        throw new Error(data?.message || 'Terjadi kesalahan');
                     }
+                    return res.json();
+                })
+                .then((response) => {
+                    Swal.fire({
+                        title: 'Berhasil!',
+                        text: response.message,
+                        icon: 'success',
+                        timer: 2000,
+                        showConfirmButton: false
+                    }).then(() => location.reload());
+                })
+                .catch((err) => {
+                    checkbox.checked = !isActive;
+                    Swal.fire({
+                        title: 'Error!',
+                        text: err.message || 'Terjadi kesalahan',
+                        icon: 'error'
+                    });
                 });
-            } else {
-                checkbox.prop('checked', !isActive);
-            }
+            });
         });
     });
 });

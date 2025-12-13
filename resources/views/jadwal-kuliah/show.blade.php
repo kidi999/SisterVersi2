@@ -192,6 +192,33 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Lampiran -->
+            <div class="card mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="bi bi-paperclip"></i> Dokumen Lampiran ({{ $jadwalKuliah->files->count() }})</h5>
+                </div>
+                <div class="card-body">
+                    @if($jadwalKuliah->files->count() > 0)
+                        <div class="list-group">
+                            @foreach($jadwalKuliah->files as $file)
+                                <div class="list-group-item d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <i class="bi {{ $file->icon_class }} me-2"></i>
+                                        <strong>{{ $file->file_name }}</strong>
+                                        <small class="text-muted">({{ $file->formatted_size }})</small>
+                                    </div>
+                                    <a href="{{ route('api.file-upload.download', $file->id) }}" class="btn btn-sm btn-success" target="_blank">
+                                        <i class="bi bi-download"></i> Download
+                                    </a>
+                                </div>
+                            @endforeach
+                        </div>
+                    @else
+                        <p class="text-muted mb-0">Tidak ada lampiran.</p>
+                    @endif
+                </div>
+            </div>
         </div>
 
         <!-- Sidebar -->

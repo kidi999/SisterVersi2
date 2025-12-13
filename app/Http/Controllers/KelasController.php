@@ -6,6 +6,9 @@ use App\Models\Kelas;
 use App\Models\MataKuliah;
 use App\Models\Dosen;
 use App\Models\TahunAkademik;
+use App\Models\FileUpload;
+use App\Support\TabularExport;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
@@ -49,6 +52,97 @@ class KelasController extends Controller
         return view('kelas.index', compact('kelas', 'tahunAjaranList'));
     }
 
+    public function exportExcel(Request $request)
+    {
+        $query = Kelas::with(['mataKuliah.programStudi', 'dosen']);
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('kode_kelas', 'like', "%{$search}%")
+                    ->orWhere('nama_kelas', 'like', "%{$search}%")
+                    ->orWhereHas('mataKuliah', function ($q) use ($search) {
+                        $q->where('nama_mk', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        if ($request->filled('tahun_ajaran')) {
+            $query->where('tahun_ajaran', $request->tahun_ajaran);
+        }
+
+        if ($request->filled('semester')) {
+            $query->where('semester', $request->semester);
+        }
+
+        $kelas = $query->latest()->get();
+
+        $headers = ['Kode Kelas', 'Nama Kelas', 'Mata Kuliah', 'Program Studi', 'Dosen', 'Tahun Ajaran', 'Semester', 'Kapasitas', 'Terisi'];
+        $rows = $kelas->map(function (Kelas $item) {
+            return [
+                $item->kode_kelas,
+                $item->nama_kelas,
+                $item->mataKuliah?->nama ?? ($item->mataKuliah?->nama_mk ?? '-'),
+                $item->mataKuliah?->programStudi?->nama ?? ($item->mataKuliah?->programStudi?->nama_prodi ?? '-'),
+                $item->dosen?->nama ?? ($item->dosen?->nama_dosen ?? '-'),
+                $item->tahun_ajaran,
+                $item->semester,
+                (string) $item->kapasitas,
+                (string) $item->terisi,
+            ];
+        })->toArray();
+
+        $html = TabularExport::htmlTable($headers, $rows);
+        return TabularExport::excelResponse('kelas.xls', $html);
+    }
+
+    public function exportPdf(Request $request)
+    {
+        $query = Kelas::with(['mataKuliah.programStudi', 'dosen']);
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('kode_kelas', 'like', "%{$search}%")
+                    ->orWhere('nama_kelas', 'like', "%{$search}%")
+                    ->orWhereHas('mataKuliah', function ($q) use ($search) {
+                        $q->where('nama_mk', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        if ($request->filled('tahun_ajaran')) {
+            $query->where('tahun_ajaran', $request->tahun_ajaran);
+        }
+
+        if ($request->filled('semester')) {
+            $query->where('semester', $request->semester);
+        }
+
+        $kelas = $query->latest()->get();
+
+        $headers = ['Kode Kelas', 'Nama Kelas', 'Mata Kuliah', 'Program Studi', 'Dosen', 'Tahun Ajaran', 'Semester', 'Kapasitas', 'Terisi'];
+        $rows = $kelas->map(function (Kelas $item) {
+            return [
+                $item->kode_kelas,
+                $item->nama_kelas,
+                $item->mataKuliah?->nama ?? ($item->mataKuliah?->nama_mk ?? '-'),
+                $item->mataKuliah?->programStudi?->nama ?? ($item->mataKuliah?->programStudi?->nama_prodi ?? '-'),
+                $item->dosen?->nama ?? ($item->dosen?->nama_dosen ?? '-'),
+                $item->tahun_ajaran,
+                $item->semester,
+                (string) $item->kapasitas,
+                (string) $item->terisi,
+            ];
+        })->toArray();
+
+        $html = TabularExport::htmlTable($headers, $rows);
+
+        return Pdf::loadHTML($html)
+            ->setPaper('A4', 'landscape')
+            ->download('kelas.pdf');
+    }
+
     /**
      * Show the form for creating a new resource.
      */
@@ -74,6 +168,8 @@ class KelasController extends Controller
             'tahun_ajaran' => 'required|string|max:20',
             'semester' => 'required|in:Ganjil,Genap',
             'kapasitas' => 'required|integer|min:1|max:100',
+            'file_ids' => 'nullable|array',
+            'file_ids.*' => 'exists:file_uploads,id',
         ]);
 
         try {
@@ -92,6 +188,18 @@ class KelasController extends Controller
                 'created_at' => now(),
             ]);
 
+            if ($request->filled('file_ids') && is_array($request->file_ids)) {
+                FileUpload::whereIn('id', $request->file_ids)
+                    ->where(function ($query) {
+                        $query->whereNull('fileable_id')
+                            ->orWhere('fileable_id', 0);
+                    })
+                    ->update([
+                        'fileable_id' => $kelas->id,
+                        'fileable_type' => Kelas::class,
+                    ]);
+            }
+
             DB::commit();
 
             return redirect()->route('kelas.index')
@@ -109,7 +217,7 @@ class KelasController extends Controller
      */
     public function show(Kelas $kela)
     {
-        $kela->load(['mataKuliah.programStudi', 'dosen', 'krsItems.mahasiswa']);
+        $kela->load(['mataKuliah.programStudi', 'dosen', 'krsItems.mahasiswa', 'files']);
         
         return view('kelas.show', compact('kela'));
     }
@@ -119,6 +227,7 @@ class KelasController extends Controller
      */
     public function edit(Kelas $kela)
     {
+        $kela->load('files');
         $mataKuliah = MataKuliah::with('programStudi')->orderBy('nama')->get();
         $dosen = Dosen::orderBy('nama')->get();
         $tahunAkademik = TahunAkademik::where('is_active', true)->get();
@@ -139,6 +248,8 @@ class KelasController extends Controller
             'tahun_ajaran' => 'required|string|max:20',
             'semester' => 'required|in:Ganjil,Genap',
             'kapasitas' => 'required|integer|min:1|max:100',
+            'file_ids' => 'nullable|array',
+            'file_ids.*' => 'exists:file_uploads,id',
         ]);
 
         try {
@@ -159,6 +270,22 @@ class KelasController extends Controller
                 'kapasitas' => $validated['kapasitas'],
                 'updated_by' => Auth::user()->name,
             ]);
+
+            if ($request->has('file_ids') && is_array($request->file_ids)) {
+                FileUpload::whereIn('id', $request->file_ids)
+                    ->where(function ($query) use ($kela) {
+                        $query->whereNull('fileable_id')
+                            ->orWhere('fileable_id', 0)
+                            ->orWhere(function ($q) use ($kela) {
+                                $q->where('fileable_type', Kelas::class)
+                                    ->where('fileable_id', $kela->id);
+                            });
+                    })
+                    ->update([
+                        'fileable_id' => $kela->id,
+                        'fileable_type' => Kelas::class,
+                    ]);
+            }
 
             DB::commit();
 

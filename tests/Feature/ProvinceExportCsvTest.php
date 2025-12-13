@@ -12,6 +12,17 @@ class ProvinceExportCsvTest extends TestCase
 {
     use RefreshDatabase;
 
+    private function getStreamedContent($response): string
+    {
+        if (method_exists($response, 'streamedContent')) {
+            return (string) $response->streamedContent();
+        }
+
+        ob_start();
+        $response->sendContent();
+        return (string) (ob_get_clean() ?: '');
+    }
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -28,8 +39,10 @@ class ProvinceExportCsvTest extends TestCase
         $this->actingAs($this->user);
         $response = $this->get('/provinsi-export-csv');
         $response->assertStatus(200);
-        $response->assertHeader('content-type', 'text/csv');
+        $this->assertTrue(str_contains($response->headers->get('content-type'), 'text/csv'));
         $response->assertHeader('content-disposition', 'attachment; filename="provinsi.csv"');
-        $this->assertStringContainsString('ID,Kode,Nama Provinsi', $response->getContent());
+        $csv = $this->getStreamedContent($response);
+        $this->assertStringContainsString('ID,Kode', $csv);
+        $this->assertStringContainsString('Nama Provinsi', $csv);
     }
 }

@@ -6,8 +6,10 @@ use App\Models\Dosen;
 use App\Models\ProgramStudi;
 use App\Models\Fakultas;
 use App\Models\FileUpload;
+use App\Support\TabularExport;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class DosenController extends Controller
 {
@@ -67,11 +69,157 @@ class DosenController extends Controller
             });
         }
 
-        $dosen = $query->latest()->paginate(20);
+        $dosen = $query->latest()->paginate(20)->withQueryString();
         $fakultas = Fakultas::all();
         $programStudi = ProgramStudi::all();
 
         return view('dosen.index', compact('dosen', 'fakultas', 'programStudi'));
+    }
+
+    public function exportExcel(Request $request)
+    {
+        $query = Dosen::with(['fakultas', 'programStudi.fakultas']);
+
+        if ($request->filled('level_dosen')) {
+            $query->where('level_dosen', $request->level_dosen);
+        }
+
+        if ($request->filled('fakultas_id')) {
+            $query->where(function ($q) use ($request) {
+                $q->where('fakultas_id', $request->fakultas_id)
+                    ->orWhere('level_dosen', 'universitas')
+                    ->orWhereHas('programStudi', function ($q2) use ($request) {
+                        $q2->where('fakultas_id', $request->fakultas_id);
+                    });
+            });
+        }
+
+        if ($request->filled('program_studi_id')) {
+            $query->where(function ($q) use ($request) {
+                $prodi = ProgramStudi::find($request->program_studi_id);
+                $q->where('program_studi_id', $request->program_studi_id)
+                    ->orWhere('level_dosen', 'universitas');
+                if ($prodi) {
+                    $q->orWhere(function ($q2) use ($prodi) {
+                        $q2->where('level_dosen', 'fakultas')
+                            ->where('fakultas_id', $prodi->fakultas_id);
+                    });
+                }
+            });
+        }
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->filled('jabatan_akademik')) {
+            $query->where('jabatan_akademik', $request->jabatan_akademik);
+        }
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('nama_dosen', 'like', "%{$search}%")
+                    ->orWhere('nip', 'like', "%{$search}%")
+                    ->orWhere('nidn', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%");
+            });
+        }
+
+        $items = $query->latest()->get();
+
+        $rows = $items->map(function (Dosen $item, int $index) {
+            return [
+                $index + 1,
+                $item->nip,
+                $item->nidn ?? '-',
+                $item->nama_dosen,
+                ucfirst($item->level_dosen ?? '-'),
+                $item->scope_label,
+                $item->email,
+                $item->status,
+            ];
+        });
+
+        $html = TabularExport::htmlTable(
+            ['No', 'NIP', 'NIDN', 'Nama Dosen', 'Level', 'Scope', 'Email', 'Status'],
+            $rows
+        );
+
+        return TabularExport::excelResponse('dosen.xls', $html);
+    }
+
+    public function exportPdf(Request $request)
+    {
+        $query = Dosen::with(['fakultas', 'programStudi.fakultas']);
+
+        if ($request->filled('level_dosen')) {
+            $query->where('level_dosen', $request->level_dosen);
+        }
+
+        if ($request->filled('fakultas_id')) {
+            $query->where(function ($q) use ($request) {
+                $q->where('fakultas_id', $request->fakultas_id)
+                    ->orWhere('level_dosen', 'universitas')
+                    ->orWhereHas('programStudi', function ($q2) use ($request) {
+                        $q2->where('fakultas_id', $request->fakultas_id);
+                    });
+            });
+        }
+
+        if ($request->filled('program_studi_id')) {
+            $query->where(function ($q) use ($request) {
+                $prodi = ProgramStudi::find($request->program_studi_id);
+                $q->where('program_studi_id', $request->program_studi_id)
+                    ->orWhere('level_dosen', 'universitas');
+                if ($prodi) {
+                    $q->orWhere(function ($q2) use ($prodi) {
+                        $q2->where('level_dosen', 'fakultas')
+                            ->where('fakultas_id', $prodi->fakultas_id);
+                    });
+                }
+            });
+        }
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->filled('jabatan_akademik')) {
+            $query->where('jabatan_akademik', $request->jabatan_akademik);
+        }
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('nama_dosen', 'like', "%{$search}%")
+                    ->orWhere('nip', 'like', "%{$search}%")
+                    ->orWhere('nidn', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%");
+            });
+        }
+
+        $items = $query->latest()->get();
+
+        $rows = $items->map(function (Dosen $item, int $index) {
+            return [
+                $index + 1,
+                $item->nip,
+                $item->nidn ?? '-',
+                $item->nama_dosen,
+                ucfirst($item->level_dosen ?? '-'),
+                $item->scope_label,
+                $item->email,
+                $item->status,
+            ];
+        });
+
+        $html = TabularExport::htmlTable(
+            ['No', 'NIP', 'NIDN', 'Nama Dosen', 'Level', 'Scope', 'Email', 'Status'],
+            $rows
+        );
+
+        return Pdf::loadHTML($html)->download('dosen.pdf');
     }
 
     public function create()

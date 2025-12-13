@@ -5,6 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\Nilai;
 use App\Models\Krs;
 use App\Models\Mahasiswa;
+use App\Models\FileUpload;
+use App\Support\TabularExport;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -80,6 +83,155 @@ class NilaiController extends Controller
         return view('nilai.index', compact('nilai', 'tahunAjaranList'));
     }
 
+    public function exportExcel(Request $request)
+    {
+        $user = Auth::user();
+        $query = Nilai::with(['krs.mahasiswa.programStudi', 'krs.kelas.mataKuliah', 'krs.kelas.dosen']);
+
+        if ($user->role->name == 'mahasiswa') {
+            if ($user->mahasiswa_id) {
+                $query->whereHas('krs', function ($q) use ($user) {
+                    $q->where('mahasiswa_id', $user->mahasiswa_id);
+                });
+            } else {
+                return redirect()->route('dashboard')
+                    ->with('error', 'Data mahasiswa tidak ditemukan. Silakan hubungi administrator.');
+            }
+        } elseif ($user->role->name == 'dosen') {
+            $query->whereHas('krs.kelas', function ($q) use ($user) {
+                $q->where('dosen_id', $user->dosen->id ?? 0);
+            });
+        } elseif ($user->role->name == 'admin_prodi') {
+            $query->whereHas('krs.mahasiswa', function ($q) use ($user) {
+                $q->where('program_studi_id', $user->program_studi_id);
+            });
+        } elseif ($user->role->name == 'admin_fakultas') {
+            $query->whereHas('krs.mahasiswa.programStudi', function ($q) use ($user) {
+                $q->where('fakultas_id', $user->fakultas_id);
+            });
+        }
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->whereHas('krs.mahasiswa', function ($q) use ($search) {
+                $q->where('nim', 'like', "%{$search}%")
+                    ->orWhere('nama_mahasiswa', 'like', "%{$search}%");
+            });
+        }
+
+        if ($request->filled('tahun_ajaran')) {
+            $query->whereHas('krs', function ($q) use ($request) {
+                $q->where('tahun_ajaran', $request->tahun_ajaran);
+            });
+        }
+
+        if ($request->filled('semester')) {
+            $query->whereHas('krs', function ($q) use ($request) {
+                $q->where('semester', $request->semester);
+            });
+        }
+
+        $nilai = $query->latest()->get();
+
+        $headers = ['NIM', 'Nama Mahasiswa', 'Mata Kuliah', 'Kode Kelas', 'SKS', 'Tahun Ajaran', 'Semester', 'Tugas', 'UTS', 'UAS', 'Nilai Akhir', 'Huruf', 'Bobot'];
+        $rows = $nilai->map(function (Nilai $item) {
+            return [
+                $item->krs?->mahasiswa?->nim ?? '-',
+                $item->krs?->mahasiswa?->nama ?? ($item->krs?->mahasiswa?->nama_mahasiswa ?? '-'),
+                $item->krs?->kelas?->mataKuliah?->nama ?? ($item->krs?->kelas?->mataKuliah?->nama_mk ?? '-'),
+                $item->krs?->kelas?->kode_kelas ?? '-',
+                (string) ($item->krs?->kelas?->mataKuliah?->sks ?? 0),
+                $item->krs?->tahun_ajaran ?? '-',
+                $item->krs?->semester ?? '-',
+                $item->nilai_tugas !== null ? (string) $item->nilai_tugas : '-',
+                $item->nilai_uts !== null ? (string) $item->nilai_uts : '-',
+                $item->nilai_uas !== null ? (string) $item->nilai_uas : '-',
+                $item->nilai_akhir !== null ? (string) $item->nilai_akhir : '-',
+                $item->nilai_huruf ?? '-',
+                $item->bobot !== null ? (string) $item->bobot : '-',
+            ];
+        })->toArray();
+
+        $html = TabularExport::htmlTable($headers, $rows);
+        return TabularExport::excelResponse('nilai.xls', $html);
+    }
+
+    public function exportPdf(Request $request)
+    {
+        $user = Auth::user();
+        $query = Nilai::with(['krs.mahasiswa.programStudi', 'krs.kelas.mataKuliah', 'krs.kelas.dosen']);
+
+        if ($user->role->name == 'mahasiswa') {
+            if ($user->mahasiswa_id) {
+                $query->whereHas('krs', function ($q) use ($user) {
+                    $q->where('mahasiswa_id', $user->mahasiswa_id);
+                });
+            } else {
+                return redirect()->route('dashboard')
+                    ->with('error', 'Data mahasiswa tidak ditemukan. Silakan hubungi administrator.');
+            }
+        } elseif ($user->role->name == 'dosen') {
+            $query->whereHas('krs.kelas', function ($q) use ($user) {
+                $q->where('dosen_id', $user->dosen->id ?? 0);
+            });
+        } elseif ($user->role->name == 'admin_prodi') {
+            $query->whereHas('krs.mahasiswa', function ($q) use ($user) {
+                $q->where('program_studi_id', $user->program_studi_id);
+            });
+        } elseif ($user->role->name == 'admin_fakultas') {
+            $query->whereHas('krs.mahasiswa.programStudi', function ($q) use ($user) {
+                $q->where('fakultas_id', $user->fakultas_id);
+            });
+        }
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->whereHas('krs.mahasiswa', function ($q) use ($search) {
+                $q->where('nim', 'like', "%{$search}%")
+                    ->orWhere('nama_mahasiswa', 'like', "%{$search}%");
+            });
+        }
+
+        if ($request->filled('tahun_ajaran')) {
+            $query->whereHas('krs', function ($q) use ($request) {
+                $q->where('tahun_ajaran', $request->tahun_ajaran);
+            });
+        }
+
+        if ($request->filled('semester')) {
+            $query->whereHas('krs', function ($q) use ($request) {
+                $q->where('semester', $request->semester);
+            });
+        }
+
+        $nilai = $query->latest()->get();
+
+        $headers = ['NIM', 'Nama Mahasiswa', 'Mata Kuliah', 'Kode Kelas', 'SKS', 'Tahun Ajaran', 'Semester', 'Tugas', 'UTS', 'UAS', 'Nilai Akhir', 'Huruf', 'Bobot'];
+        $rows = $nilai->map(function (Nilai $item) {
+            return [
+                $item->krs?->mahasiswa?->nim ?? '-',
+                $item->krs?->mahasiswa?->nama ?? ($item->krs?->mahasiswa?->nama_mahasiswa ?? '-'),
+                $item->krs?->kelas?->mataKuliah?->nama ?? ($item->krs?->kelas?->mataKuliah?->nama_mk ?? '-'),
+                $item->krs?->kelas?->kode_kelas ?? '-',
+                (string) ($item->krs?->kelas?->mataKuliah?->sks ?? 0),
+                $item->krs?->tahun_ajaran ?? '-',
+                $item->krs?->semester ?? '-',
+                $item->nilai_tugas !== null ? (string) $item->nilai_tugas : '-',
+                $item->nilai_uts !== null ? (string) $item->nilai_uts : '-',
+                $item->nilai_uas !== null ? (string) $item->nilai_uas : '-',
+                $item->nilai_akhir !== null ? (string) $item->nilai_akhir : '-',
+                $item->nilai_huruf ?? '-',
+                $item->bobot !== null ? (string) $item->bobot : '-',
+            ];
+        })->toArray();
+
+        $html = TabularExport::htmlTable($headers, $rows);
+
+        return Pdf::loadHTML($html)
+            ->setPaper('A4', 'landscape')
+            ->download('nilai.pdf');
+    }
+
     /**
      * Show the form for creating a new resource (Dosen input nilai).
      */
@@ -132,6 +284,8 @@ class NilaiController extends Controller
             'nilai_tugas' => 'required|numeric|min:0|max:100',
             'nilai_uts' => 'required|numeric|min:0|max:100',
             'nilai_uas' => 'required|numeric|min:0|max:100',
+            'file_ids' => 'nullable|array',
+            'file_ids.*' => 'exists:file_uploads,id',
         ]);
 
         try {
@@ -150,6 +304,18 @@ class NilaiController extends Controller
             $nilai->created_at = now();
             $nilai->save();
 
+            if ($request->filled('file_ids') && is_array($request->file_ids)) {
+                FileUpload::whereIn('id', $request->file_ids)
+                    ->where(function ($query) {
+                        $query->whereNull('fileable_id')
+                            ->orWhere('fileable_id', 0);
+                    })
+                    ->update([
+                        'fileable_id' => $nilai->id,
+                        'fileable_type' => Nilai::class,
+                    ]);
+            }
+
             return redirect()->route('nilai.index')
                            ->with('success', 'Nilai berhasil disimpan');
         } catch (\Exception $e) {
@@ -164,7 +330,7 @@ class NilaiController extends Controller
      */
     public function show(Nilai $nilai)
     {
-        $nilai->load(['krs.mahasiswa.programStudi', 'krs.kelas.mataKuliah', 'krs.kelas.dosen']);
+        $nilai->load(['krs.mahasiswa.programStudi', 'krs.kelas.mataKuliah', 'krs.kelas.dosen', 'files']);
         
         return view('nilai.show', compact('nilai'));
     }
@@ -174,7 +340,7 @@ class NilaiController extends Controller
      */
     public function edit(Nilai $nilai)
     {
-        $nilai->load(['krs.mahasiswa', 'krs.kelas.mataKuliah']);
+        $nilai->load(['krs.mahasiswa', 'krs.kelas.mataKuliah', 'files']);
         
         return view('nilai.edit', compact('nilai'));
     }
@@ -188,6 +354,8 @@ class NilaiController extends Controller
             'nilai_tugas' => 'required|numeric|min:0|max:100',
             'nilai_uts' => 'required|numeric|min:0|max:100',
             'nilai_uas' => 'required|numeric|min:0|max:100',
+            'file_ids' => 'nullable|array',
+            'file_ids.*' => 'exists:file_uploads,id',
         ]);
 
         try {
@@ -195,6 +363,22 @@ class NilaiController extends Controller
             $nilai->hitungNilaiAkhir();
             $nilai->updated_by = Auth::user()->name;
             $nilai->save();
+
+            if ($request->has('file_ids') && is_array($request->file_ids)) {
+                FileUpload::whereIn('id', $request->file_ids)
+                    ->where(function ($query) use ($nilai) {
+                        $query->whereNull('fileable_id')
+                            ->orWhere('fileable_id', 0)
+                            ->orWhere(function ($q) use ($nilai) {
+                                $q->where('fileable_type', Nilai::class)
+                                    ->where('fileable_id', $nilai->id);
+                            });
+                    })
+                    ->update([
+                        'fileable_id' => $nilai->id,
+                        'fileable_type' => Nilai::class,
+                    ]);
+            }
 
             return redirect()->route('nilai.index')
                            ->with('success', 'Nilai berhasil diperbarui');

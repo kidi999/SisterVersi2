@@ -13,6 +13,12 @@
             </nav>
         </div>
         <div>
+            <a href="{{ route('kelas.exportExcel', request()->query()) }}" class="btn btn-success me-2">
+                <i class="bi bi-file-earmark-excel"></i> Export Excel
+            </a>
+            <a href="{{ route('kelas.exportPdf', request()->query()) }}" class="btn btn-danger me-2">
+                <i class="bi bi-file-earmark-pdf"></i> Export PDF
+            </a>
             <a href="{{ route('kelas.trash') }}" class="btn btn-outline-secondary me-2">
                 <i class="bi bi-trash"></i> Sampah
             </a>

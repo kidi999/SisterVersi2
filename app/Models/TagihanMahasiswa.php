@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use App\Traits\AuditableTrait;
 
 class TagihanMahasiswa extends Model
@@ -84,6 +85,11 @@ class TagihanMahasiswa extends Model
     public function pembayaran(): HasMany
     {
         return $this->hasMany(PembayaranMahasiswa::class, 'tagihan_mahasiswa_id');
+    }
+
+    public function files(): MorphMany
+    {
+        return $this->morphMany(FileUpload::class, 'fileable')->orderBy('order');
     }
 
     /**

@@ -466,7 +466,7 @@
 
                 <!-- File Upload -->
                 <h5 class="text-primary mb-3">Lampiran Dokumen</h5>
-                <div class="row">
+                <div class="row" id="fileUploadSection">
                     <div class="col-md-12">
                         <div class="form-group">
                             <label>Upload Dokumen</label>

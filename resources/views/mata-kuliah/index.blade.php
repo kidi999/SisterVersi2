@@ -7,6 +7,18 @@
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
         <h1 class="h3 mb-0 text-gray-800">Data Mata Kuliah</h1>
         <div>
+            <a href="{{ route('mata-kuliah.exportExcel', request()->query()) }}" class="btn btn-success btn-icon-split">
+                <span class="icon text-white-50">
+                    <i class="fas fa-file-excel"></i>
+                </span>
+                <span class="text">Export Excel</span>
+            </a>
+            <a href="{{ route('mata-kuliah.exportPdf', request()->query()) }}" class="btn btn-danger btn-icon-split">
+                <span class="icon text-white-50">
+                    <i class="fas fa-file-pdf"></i>
+                </span>
+                <span class="text">Export PDF</span>
+            </a>
             <a href="{{ route('mata-kuliah.trash') }}" class="btn btn-warning btn-icon-split">
                 <span class="icon text-white-50">
                     <i class="fas fa-trash"></i>

@@ -351,9 +351,10 @@
             </div>
             <div class="card-body p-4">
                 <p class="text-muted mb-3">Upload dokumen persyaratan (KTP, Ijazah, Foto, Rapor, dll). Maks 2MB per file.</p>
-                <x-file-upload 
-                    :existingFiles="[]"
-                    label="Upload Dokumen Persyaratan"
+                <x-file-upload
+                    :existingFiles="collect()"
+                    fileableType="App\Models\PendaftaranMahasiswa"
+                    :fileableId="0"
                 />
             </div>
         </div>

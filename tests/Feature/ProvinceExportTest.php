@@ -32,7 +32,9 @@ class ProvinceExportTest extends TestCase
         $this->actingAs($user);
         $response = $this->get('/provinsi-export?type=excel');
         $response->assertStatus(200);
-        $response->assertHeader('content-disposition', 'attachment; filename=provinsi.xlsx');
+        $this->assertTrue(str_contains($response->headers->get('content-type'), 'application/vnd.ms-excel'));
+        $response->assertHeader('content-disposition', 'attachment; filename="provinsi.xls"');
+        $response->assertSee('Nama Provinsi');
     }
 
     public function test_export_pdf_provinces_success()

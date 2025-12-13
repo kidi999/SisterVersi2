@@ -3,10 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\Mahasiswa;
+use App\Models\FileUpload;
 use App\Models\Province;
 use App\Models\Regency;
 use App\Models\SubRegency;
 use App\Models\Village;
+use App\Support\TabularExport;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -33,10 +36,79 @@ class ProfilMahasiswaController extends Controller
         
         $mahasiswa = Mahasiswa::with([
             'programStudi.fakultas',
-            'village.subRegency.regency.province'
+            'village.subRegency.regency.province',
+            'files'
         ])->findOrFail($user->mahasiswa_id);
         
         return view('profil-mahasiswa.index', compact('mahasiswa'));
+    }
+
+    public function exportExcel(Request $request)
+    {
+        $user = Auth::user();
+
+        if (!$user->hasRole('mahasiswa') || !$user->mahasiswa_id) {
+            return redirect()->route('dashboard')->with('error', 'Akses ditolak.');
+        }
+
+        $mahasiswa = Mahasiswa::with([
+            'programStudi.fakultas',
+            'village.subRegency.regency.province',
+            'files'
+        ])->findOrFail($user->mahasiswa_id);
+
+        $headers = ['Field', 'Value'];
+        $rows = [
+            ['Nama', $mahasiswa->nama_mahasiswa],
+            ['NIM', $mahasiswa->nim],
+            ['Email', $mahasiswa->email],
+            ['Telepon', $mahasiswa->telepon ?? '-'],
+            ['Alamat', $mahasiswa->alamat ?? '-'],
+            ['Program Studi', $mahasiswa->programStudi->nama_prodi ?? '-'],
+            ['Fakultas', $mahasiswa->programStudi->fakultas->nama_fakultas ?? '-'],
+            ['Tahun Masuk', $mahasiswa->tahun_masuk ?? '-'],
+            ['Semester', (string) ($mahasiswa->semester ?? '-')],
+            ['IPK', (string) ($mahasiswa->ipk ?? '-')],
+            ['Status', $mahasiswa->status ?? '-'],
+            ['Lampiran', (string) $mahasiswa->files->count()],
+        ];
+
+        $html = TabularExport::htmlTable($headers, $rows);
+        return TabularExport::excelResponse('profil_mahasiswa.xls', $html);
+    }
+
+    public function exportPdf(Request $request)
+    {
+        $user = Auth::user();
+
+        if (!$user->hasRole('mahasiswa') || !$user->mahasiswa_id) {
+            return redirect()->route('dashboard')->with('error', 'Akses ditolak.');
+        }
+
+        $mahasiswa = Mahasiswa::with([
+            'programStudi.fakultas',
+            'village.subRegency.regency.province',
+            'files'
+        ])->findOrFail($user->mahasiswa_id);
+
+        $headers = ['Field', 'Value'];
+        $rows = [
+            ['Nama', $mahasiswa->nama_mahasiswa],
+            ['NIM', $mahasiswa->nim],
+            ['Email', $mahasiswa->email],
+            ['Telepon', $mahasiswa->telepon ?? '-'],
+            ['Alamat', $mahasiswa->alamat ?? '-'],
+            ['Program Studi', $mahasiswa->programStudi->nama_prodi ?? '-'],
+            ['Fakultas', $mahasiswa->programStudi->fakultas->nama_fakultas ?? '-'],
+            ['Tahun Masuk', $mahasiswa->tahun_masuk ?? '-'],
+            ['Semester', (string) ($mahasiswa->semester ?? '-')],
+            ['IPK', (string) ($mahasiswa->ipk ?? '-')],
+            ['Status', $mahasiswa->status ?? '-'],
+            ['Lampiran', (string) $mahasiswa->files->count()],
+        ];
+
+        $html = TabularExport::htmlTable($headers, $rows);
+        return Pdf::loadHTML($html)->download('profil_mahasiswa.pdf');
     }
     
     /**
@@ -58,7 +130,8 @@ class ProfilMahasiswaController extends Controller
         
         $mahasiswa = Mahasiswa::with([
             'programStudi.fakultas',
-            'village.subRegency.regency.province'
+            'village.subRegency.regency.province',
+            'files'
         ])->findOrFail($user->mahasiswa_id);
         
         // Get data untuk dropdown
@@ -121,6 +194,8 @@ class ProfilMahasiswaController extends Controller
             'email' => 'required|email|unique:mahasiswa,email,' . $mahasiswa->id,
             'nama_wali' => 'nullable|string|max:100',
             'telepon_wali' => 'nullable|string|max:20',
+            'file_ids' => 'nullable|array',
+            'file_ids.*' => 'exists:file_uploads,id',
         ]);
         
         $mahasiswa->update([
@@ -135,6 +210,14 @@ class ProfilMahasiswaController extends Controller
             'telepon_wali' => $validated['telepon_wali'],
             'updated_by' => $user->name,
         ]);
+
+        if ($request->filled('file_ids')) {
+            FileUpload::whereIn('id', $request->file_ids)
+                ->update([
+                    'fileable_type' => Mahasiswa::class,
+                    'fileable_id' => $mahasiswa->id,
+                ]);
+        }
         
         return redirect()->route('profil-mahasiswa.index')
             ->with('success', 'Profil berhasil diperbarui');

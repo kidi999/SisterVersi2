@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\FileUpload;
+use App\Models\PendaftaranMahasiswa;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -22,6 +23,19 @@ class FileUploadController extends Controller
             'category' => 'nullable|string',
             'description' => 'nullable|string|max:255',
         ]);
+
+        // Guest uploads are only allowed for PMB draft attachments.
+        if (!Auth::check()) {
+            $fileableType = (string) $request->input('fileable_type');
+            $fileableId = (int) ($request->input('fileable_id') ?? 0);
+
+            if ($fileableType !== PendaftaranMahasiswa::class || $fileableId !== 0) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Upload hanya diizinkan untuk lampiran pendaftaran PMB.'
+                ], 403);
+            }
+        }
 
         try {
             $file = $request->file('file');
@@ -48,7 +62,7 @@ class FileUploadController extends Controller
                 'order' => 0,
             ]);
             
-            $fileUpload->created_by = Auth::user()->name;
+            $fileUpload->created_by = Auth::check() ? Auth::user()->name : 'PMB Guest';
             $fileUpload->save();
             
             return response()->json([

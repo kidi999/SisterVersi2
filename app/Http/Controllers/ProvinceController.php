@@ -6,13 +6,63 @@ use App\Models\Province;
 use App\Models\FileUpload;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Maatwebsite\Excel\Facades\Excel;
-use App\Exports\ProvincesExport;
-use App\Exports\ProvincesExportView;
 use Barryvdh\DomPDF\Facade\Pdf;
 
 class ProvinceController extends Controller
 {
+    public function export(Request $request)
+    {
+        $type = $request->query('type');
+        if ($type === 'pdf') {
+            return $this->exportPdf($request);
+        }
+
+        if ($type === 'excel') {
+            return $this->exportExcel($request);
+        }
+
+        return redirect()->back()->with('error', 'Tipe export tidak valid');
+    }
+
+    public function exportExcel(Request $request)
+    {
+        $search = $request->input('search');
+        $query = Province::orderBy('name');
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%$search%")
+                    ->orWhere('code', 'like', "%$search%");
+            });
+        }
+        $provinces = $query->get(['id', 'code', 'name']);
+
+        $filename = 'provinsi.xls';
+        $headers = [
+            'Content-Type' => 'application/vnd.ms-excel; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+            'Cache-Control' => 'max-age=0',
+        ];
+
+        $bom = "\xEF\xBB\xBF";
+        $html = '<html><head><meta charset="UTF-8"></head><body>'
+            . '<table border="1" cellspacing="0" cellpadding="4">'
+            . '<thead><tr>'
+            . '<th>ID</th><th>Kode</th><th>Nama Provinsi</th>'
+            . '</tr></thead><tbody>';
+
+        foreach ($provinces as $prov) {
+            $html .= '<tr>'
+                . '<td>' . e((string) $prov->id) . '</td>'
+                . '<td>' . e((string) $prov->code) . '</td>'
+                . '<td>' . e((string) $prov->name) . '</td>'
+                . '</tr>';
+        }
+
+        $html .= '</tbody></table></body></html>';
+
+        return response($bom . $html, 200, $headers);
+    }
+
     public function exportCsv(Request $request)
     {
         $search = $request->input('search');
@@ -43,6 +93,22 @@ class ProvinceController extends Controller
         };
 
         return response()->stream($callback, 200, $headers);
+    }
+
+    public function exportPdf(Request $request)
+    {
+        $search = $request->input('search');
+        $query = Province::orderBy('name');
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%$search%")
+                    ->orWhere('code', 'like', "%$search%");
+            });
+        }
+        $provinces = $query->get(['id', 'code', 'name']);
+
+        $pdf = Pdf::loadView('wilayah.provinsi._export_pdf', compact('provinces'));
+        return $pdf->download('provinsi.pdf');
     }
 
     public function searchAjax(Request $request)

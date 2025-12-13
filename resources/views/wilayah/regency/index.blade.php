@@ -16,6 +16,9 @@
             <a href="{{ route('regency.create') }}" class="btn btn-primary btn-sm">
                 <i class="bi bi-plus-circle"></i> Tambah Kabupaten/Kota
             </a>
+            <a href="{{ route('regency.exportExcel', ['search' => request('search'), 'sort' => request('sort'), 'order' => request('order')]) }}" class="btn btn-success btn-sm">
+                <i class="bi bi-file-earmark-excel"></i> Export Excel
+            </a>
             <a href="{{ route('regency.exportCsv', ['search' => request('search'), 'sort' => request('sort'), 'order' => request('order')]) }}" class="btn btn-success btn-sm">
                 <i class="bi bi-file-earmark-excel"></i> Export CSV
             </a>

@@ -7,12 +7,26 @@
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
         <h1 class="h3 mb-0 text-gray-800">Data Program Studi</h1>
         @if(Auth::user()->hasRole(['super_admin', 'admin_universitas', 'admin_fakultas', 'admin_prodi']))
-            <a href="{{ route('program-studi.create') }}" class="btn btn-primary btn-icon-split">
-                <span class="icon text-white-50">
-                    <i class="fas fa-plus"></i>
-                </span>
-                <span class="text">Tambah Program Studi</span>
-            </a>
+            <div>
+                <a href="{{ route('program-studi.exportExcel', request()->query()) }}" class="btn btn-success btn-icon-split mr-2">
+                    <span class="icon text-white-50">
+                        <i class="fas fa-file-excel"></i>
+                    </span>
+                    <span class="text">Export Excel</span>
+                </a>
+                <a href="{{ route('program-studi.exportPdf', request()->query()) }}" class="btn btn-danger btn-icon-split mr-2">
+                    <span class="icon text-white-50">
+                        <i class="fas fa-file-pdf"></i>
+                    </span>
+                    <span class="text">Export PDF</span>
+                </a>
+                <a href="{{ route('program-studi.create') }}" class="btn btn-primary btn-icon-split">
+                    <span class="icon text-white-50">
+                        <i class="fas fa-plus"></i>
+                    </span>
+                    <span class="text">Tambah Program Studi</span>
+                </a>
+            </div>
         @endif
     </div>
 

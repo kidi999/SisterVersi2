@@ -10,6 +10,9 @@
             <a href="{{ route('village.create') }}" class="btn btn-primary">
                 <i class="bi bi-plus-circle"></i> Tambah Desa/Kelurahan
             </a>
+            <a href="{{ route('village.exportExcel', request()->all()) }}" class="btn btn-success">
+                <i class="bi bi-file-earmark-excel"></i> Export Excel
+            </a>
             <a href="{{ route('village.exportCsv', request()->all()) }}" class="btn btn-success">
                 <i class="bi bi-file-earmark-excel"></i> Export CSV
             </a>

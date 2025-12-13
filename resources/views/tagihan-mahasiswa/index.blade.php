@@ -15,6 +15,12 @@
             </nav>
         </div>
         <div>
+            <a href="{{ route('tagihan-mahasiswa.exportExcel', request()->query()) }}" class="btn btn-success me-2">
+                <i class="bi bi-file-earmark-excel"></i> Export Excel
+            </a>
+            <a href="{{ route('tagihan-mahasiswa.exportPdf', request()->query()) }}" class="btn btn-danger me-2">
+                <i class="bi bi-file-earmark-pdf"></i> Export PDF
+            </a>
             <a href="{{ route('tagihan-mahasiswa.batch-create') }}" class="btn btn-success me-2">
                 <i class="bi bi-plus-circle"></i> Buat Massal
             </a>

@@ -7,9 +7,17 @@
 <div class="card">
     <div class="card-header d-flex justify-content-between align-items-center">
         <h5 class="mb-0">Daftar Mahasiswa</h5>
-        <a href="{{ route('mahasiswa.create') }}" class="btn btn-primary">
-            <i class="bi bi-plus-circle"></i> Tambah Mahasiswa
-        </a>
+        <div>
+            <a href="{{ route('mahasiswa.exportExcel', request()->query()) }}" class="btn btn-success me-2">
+                <i class="bi bi-file-earmark-excel"></i> Export Excel
+            </a>
+            <a href="{{ route('mahasiswa.exportPdf', request()->query()) }}" class="btn btn-danger me-2">
+                <i class="bi bi-file-earmark-pdf"></i> Export PDF
+            </a>
+            <a href="{{ route('mahasiswa.create') }}" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> Tambah Mahasiswa
+            </a>
+        </div>
     </div>
     <div class="card-body">
         <!-- Search Form -->

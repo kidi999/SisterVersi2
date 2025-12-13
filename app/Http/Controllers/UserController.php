@@ -9,6 +9,8 @@ use App\Models\ProgramStudi;
 use App\Models\Dosen;
 use App\Models\Mahasiswa;
 use App\Models\FileUpload;
+use App\Support\TabularExport;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -19,13 +21,77 @@ class UserController extends Controller
     /**
      * Display a listing of users.
      */
-    public function index()
+    public function index(Request $request)
     {
         $users = User::with(['role', 'fakultas', 'programStudi', 'dosen', 'mahasiswa'])
             ->where('id', '!=', 1) // Exclude super admin default
-            ->get();
+            ->orderBy('name')
+            ->paginate(20)
+            ->withQueryString();
 
         return view('users.index', compact('users'));
+    }
+
+    public function exportExcel(Request $request)
+    {
+        $users = User::with(['role', 'fakultas', 'programStudi', 'dosen', 'mahasiswa'])
+            ->where('id', '!=', 1)
+            ->orderBy('name')
+            ->get();
+
+        $headers = [
+            'Nama',
+            'Email',
+            'Role',
+            'Fakultas',
+            'Program Studi',
+            'Status',
+        ];
+
+        $rows = $users->map(function ($user) {
+            return [
+                $user->name,
+                $user->email,
+                $user->role->display_name ?? '-',
+                $user->fakultas->nama_fakultas ?? '-',
+                $user->programStudi->nama_prodi ?? '-',
+                $user->is_active ? 'Aktif' : 'Nonaktif',
+            ];
+        });
+
+        $html = TabularExport::htmlTable($headers, $rows);
+        return TabularExport::excelResponse('users.xls', $html);
+    }
+
+    public function exportPdf(Request $request)
+    {
+        $users = User::with(['role', 'fakultas', 'programStudi', 'dosen', 'mahasiswa'])
+            ->where('id', '!=', 1)
+            ->orderBy('name')
+            ->get();
+
+        $headers = [
+            'Nama',
+            'Email',
+            'Role',
+            'Fakultas',
+            'Program Studi',
+            'Status',
+        ];
+
+        $rows = $users->map(function ($user) {
+            return [
+                $user->name,
+                $user->email,
+                $user->role->display_name ?? '-',
+                $user->fakultas->nama_fakultas ?? '-',
+                $user->programStudi->nama_prodi ?? '-',
+                $user->is_active ? 'Aktif' : 'Nonaktif',
+            ];
+        });
+
+        $html = TabularExport::htmlTable($headers, $rows);
+        return Pdf::loadHTML($html)->download('users.pdf');
     }
 
     /**
